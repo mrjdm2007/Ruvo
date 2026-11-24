@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -123,6 +124,13 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     var budgetDialog by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
     val haptic = LocalHapticFeedback.current
+    val prefs = remember(context) { context.getSharedPreferences("ruvo_preferences", 0) }
+    var budget by remember { mutableStateOf(prefs.getString("monthly_budget", "15000") ?: "15000") }
+    var dark by remember { mutableStateOf(prefs.getBoolean("dark_mode", false)) }
+    var pinHash by remember { mutableStateOf(prefs.getString("app_pin_hash", null)) }
+    var locked by remember { mutableStateOf(pinHash != null) }
+    var pinEntry by remember { mutableStateOf("") }
+    var pinError by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, pinHash) {
         val observer = LifecycleEventObserver { _, event ->
@@ -135,13 +143,6 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
-    val prefs = remember(context) { context.getSharedPreferences("ruvo_preferences", 0) }
-    var budget by remember { mutableStateOf(prefs.getString("monthly_budget", "15000") ?: "15000") }
-    var dark by remember { mutableStateOf(prefs.getBoolean("dark_mode", false)) }
-    var pinHash by remember { mutableStateOf(prefs.getString("app_pin_hash", null)) }
-    var locked by remember { mutableStateOf(pinHash != null) }
-    var pinEntry by remember { mutableStateOf("") }
-    var pinError by remember { mutableStateOf(false) }
     var pinSetup by remember { mutableStateOf(false) }
     var search by remember { mutableStateOf("") }
     val colors=if(dark) darkColorScheme(primary=Sage,background=Color(0xFF111A16),surface=Color(0xFF1C2821)) else lightColorScheme(primary=Forest,background=Ivory,surface=Color.White)
