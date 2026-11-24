@@ -279,7 +279,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             options.chunked(3).forEach{group->Row(horizontalArrangement=Arrangement.spacedBy(5.dp)){group.forEach{c->FilterChip(selected=category==c.id,onClick={category=c.id},label={Text(c.name,fontSize=10.sp)})}}}
             TextButton(onClick=onAddCategory){Icon(Icons.Default.Add,null);Text("New category")}
             OutlinedTextField(note,{note=it},label={Text("Note (optional)")},singleLine=true,modifier=Modifier.fillMaxWidth())
-            TextButton(onClick={date=System.currentTimeMillis()}){Icon(Icons.Default.Today,null);Text("Date · "+Instant.ofEpochMilli(date).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("d MMM yyyy")))}
+            TextButton(onClick={showDatePicker=true}){Icon(Icons.Default.Today,null);Text("Date · "+Instant.ofEpochMilli(date).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("d MMM yyyy")))}
         }
     },confirmButton={TextButton(onClick={val paise=parsePaise(amount);if(paise!=null&&category!=0L)onSave(RuvoTransaction(id=existing?.id?:0,amountPaise=paise,categoryId=category,note=note.trim(),timestamp=date,type=type))}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
 }
