@@ -265,7 +265,8 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     pending?.let{t->AlertDialog(onDismissRequest={pending=null},title={Text("Delete entry?")},text={Text("This transaction will be removed.")},confirmButton={TextButton(onClick={onDelete(t);deleted=t;pending=null}){Text("Delete")}},dismissButton={TextButton(onClick={pending=null}){Text("Cancel")}})}
 }
 
-@OptIn(ExperimentalMaterial3Api::class)\n@Composable private fun EntryDialog(existing:RuvoTransaction?,cats:List<RuvoCategory>,onDismiss:()->Unit,onSave:(RuvoTransaction)->Unit,onAddCategory:()->Unit){
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable private fun EntryDialog(existing:RuvoTransaction?,cats:List<RuvoCategory>,onDismiss:()->Unit,onSave:(RuvoTransaction)->Unit,onAddCategory:()->Unit){
     var amount by remember(existing){mutableStateOf(if(existing==null)"" else (existing.amountPaise/100.0).toString())}
     var note by remember(existing){mutableStateOf(existing?.note?:"")}
     var type by remember(existing){mutableStateOf(existing?.type?:"EXPENSE")}
