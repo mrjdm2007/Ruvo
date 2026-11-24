@@ -41,6 +41,7 @@ class RuvoWidgetProvider : AppWidgetProvider() {
                 val openPi = PendingIntent.getActivity(context, 10, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 val add = Intent(context, MainActivity::class.java).setAction(MainActivity.ACTION_QUICK_ADD)
                 val addPi = PendingIntent.getActivity(context, 11, add, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                views.setOnClickPendingIntent(R.id.widget_root, openPi)
                 views.setOnClickPendingIntent(R.id.widget_brand, openPi)
                 views.setOnClickPendingIntent(R.id.widget_amount, openPi)
                 views.setOnClickPendingIntent(R.id.widget_today, openPi)
