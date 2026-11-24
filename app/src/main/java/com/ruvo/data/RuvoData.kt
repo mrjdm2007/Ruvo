@@ -35,6 +35,9 @@ interface RuvoDao {
     @Update suspend fun updateTransaction(item: RuvoTransaction)
     @Delete suspend fun deleteTransaction(item: RuvoTransaction)
     @Insert suspend fun insertCategory(item: RuvoCategory): Long
+    @Update suspend fun updateCategory(item: RuvoCategory)
+    @Delete suspend fun deleteCategory(item: RuvoCategory)
+    @Query("UPDATE transactions SET categoryId = :replacementId WHERE categoryId = :id") suspend fun moveTransactionsToCategory(id: Long, replacementId: Long)
     @Query("SELECT COUNT(*) FROM categories") suspend fun categoryCount(): Int
     @Query("SELECT * FROM categories WHERE id = :id LIMIT 1") suspend fun category(id: Long): RuvoCategory?
 }
