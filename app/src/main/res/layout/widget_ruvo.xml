@@ -8,8 +8,7 @@
         android:id="@+id/widget_add"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@drawable/widget_add_background"
-        android:padding="12dp"
+            android:padding="12dp"
         android:src="@drawable/widget_plus"
         android:scaleType="fitCenter"
         android:contentDescription="Add expense"/>
