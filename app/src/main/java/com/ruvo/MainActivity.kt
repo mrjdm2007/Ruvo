@@ -98,7 +98,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         }) { padding ->
             Box(Modifier.fillMaxSize().padding(padding)) {
                 when(page) {
-                    0 -> Home(rows,cats,budget.toLongOrNull()?.times(100)?:1500000L,onBudget={budgetDialog=true},onEdit={editing=it;dialog=true})
+                    0 -> Home(rows,cats,parsePaise(budget)?:1500000L,onBudget={budgetDialog=true},onEdit={editing=it;dialog=true})
                     1 -> CalendarPage(rows,cats,onEdit={editing=it;dialog=true})
                     2 -> History(rows,cats,search,{search=it},onEdit={editing=it;dialog=true},onDelete={vm.delete(it)},onRestore={vm.restore(it)})
                     else -> More(cats,dark,{dark=it;prefs.edit().putBoolean("dark_mode",it).apply()},{editingCategory=null;categoryDialog=true},{budgetDialog=true},budget,onEditCategory={editingCategory=it;categoryDialog=true},pinEnabled=pinHash!=null,onSetPin={pinSetup=true},onDisablePin={pinHash=null;prefs.edit().remove("app_pin_hash").apply();locked=false})
@@ -309,7 +309,8 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
 }
 @Composable private fun BudgetDialog(current:String,onSave:(String)->Unit,onDismiss:()->Unit){
     var value by remember{mutableStateOf(current)}
-    AlertDialog(onDismissRequest=onDismiss,title={Text("Monthly budget")},text={OutlinedTextField(value,{value=it},label={Text("Budget in ₹")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number))},confirmButton={TextButton(onClick={onSave(value)}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
+    var error by remember{mutableStateOf(false)}
+    AlertDialog(onDismissRequest=onDismiss,title={Text("Monthly budget")},text={Column(verticalArrangement=Arrangement.spacedBy(6.dp)){OutlinedTextField(value,{value=it;error=false},label={Text("Budget in ₹")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),isError=error,singleLine=true);if(error)Text("Enter a valid positive amount.",color=Color(0xFFB45E52),fontSize=11.sp)}},confirmButton={TextButton(onClick={if(parsePaise(value)!=null)onSave(value) else error=true}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
 }
 @Composable private fun More(cats:List<RuvoCategory>,dark:Boolean,onDark:(Boolean)->Unit,onAdd:()->Unit,onBudget:()->Unit,budget:String,onEditCategory:(RuvoCategory)->Unit,pinEnabled:Boolean,onSetPin:()->Unit,onDisablePin:()->Unit){
     val context=androidx.compose.ui.platform.LocalContext.current
