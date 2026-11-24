@@ -456,11 +456,11 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(NightElevated).padding(4.dp),horizontalArrangement=Arrangement.spacedBy(5.dp)){
                 listOf("EXPENSE","INCOME").forEach{v->
                     val selected=type==v
-                    Box(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(if(selected)Color(0xFF315642) else Color.Transparent).clickable{
+                    Box(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(if(selected)Mint else Color.Transparent).clickable{
                         type=v
                         val last=if(v=="INCOME")lastIncomeCategory else lastExpenseCategory
                         category=last.takeIf{id->cats.any{it.id==id&&it.isIncome==(v=="INCOME")}}?:cats.firstOrNull{it.isIncome==(v=="INCOME")}?.id?:0L
-                    }.padding(vertical=11.dp),contentAlignment=Alignment.Center){Text(if(v=="EXPENSE")"Expense" else "Income",fontSize=13.sp,fontWeight=FontWeight.SemiBold,color=if(selected)Color(0xFFE8F7EC) else Color(0xFFAABBB0))}
+                    }.padding(vertical=11.dp),contentAlignment=Alignment.Center){Text(if(v=="EXPENSE")"Expense" else "Income",fontSize=13.sp,fontWeight=FontWeight.SemiBold,color=if(selected)Color(0xFF082016) else Color(0xFFAABBB0))}
                 }
             }
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Brush.verticalGradient(listOf(Color(0xFF22352B),Color(0xFF192720)))).border(1.dp,Color.White.copy(alpha=.10f),RoundedCornerShape(22.dp)).padding(16.dp)){
@@ -473,7 +473,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             Text("CATEGORY",fontSize=10.sp,color=Muted,fontWeight=FontWeight.SemiBold,letterSpacing=1.sp)
             options.chunked(3).forEach{group->Row(horizontalArrangement=Arrangement.spacedBy(7.dp)){group.forEach{c->
                 val selected=category==c.id
-                FilterChip(selected=selected,onClick={category=c.id},label={Text(c.name,fontSize=11.sp,maxLines=1)},leadingIcon={if(selected)Icon(Icons.Default.Check,null,Modifier.size(14.dp))},colors=FilterChipDefaults.filterChipColors(selectedContainerColor=Color(0xFF315642),selectedLabelColor=Color(0xFFE8F7EC),selectedLeadingIconColor=Mint,containerColor=NightElevated,labelColor=Color(0xFFD1DDD5),iconColor=Muted))
+                FilterChip(selected=selected,onClick={category=c.id},label={Text(c.name,fontSize=11.sp,maxLines=1)},leadingIcon={if(selected)Icon(Icons.Default.Check,null,Modifier.size(14.dp))},colors=FilterChipDefaults.filterChipColors(selectedContainerColor=Mint,selectedLabelColor=Color(0xFF082016),selectedLeadingIconColor=Color(0xFF082016),containerColor=NightElevated,labelColor=Color(0xFFD1DDD5),iconColor=Muted))
             }}}
             TextButton(onClick=onAddCategory,contentPadding=PaddingValues(horizontal=8.dp,vertical=2.dp)){Icon(Icons.Default.Add,null,Modifier.size(16.dp));Spacer(Modifier.width(5.dp));Text("New category",fontSize=12.sp)}
             OutlinedTextField(note,{note=it},label={Text("Note (optional)")},singleLine=true,modifier=Modifier.fillMaxWidth(),colors=OutlinedTextFieldDefaults.colors(focusedBorderColor=Mint,unfocusedBorderColor=Color(0xFF46594E),focusedLabelColor=Mint,focusedTextColor=TextPrimary,unfocusedTextColor=TextPrimary,cursorColor=Mint))
