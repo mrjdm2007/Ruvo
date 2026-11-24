@@ -50,6 +50,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent { RuvoApp(vm, intent?.action == ACTION_QUICK_ADD) }
     }
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.action == ACTION_QUICK_ADD) setContent { RuvoApp(vm, true) }
+    }
     companion object { const val ACTION_QUICK_ADD = "com.ruvo.QUICK_ADD" }
 }
 
