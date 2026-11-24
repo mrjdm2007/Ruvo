@@ -173,12 +173,13 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
 @Composable private fun CalendarPage(rows:List<RuvoTransaction>,onEdit:(RuvoTransaction)->Unit){
     var month by remember{mutableStateOf(YearMonth.now())}
     var selected by remember{mutableStateOf(LocalDate.now())}
+    var monthDrag by remember{mutableFloatStateOf(0f)}
     val daily=(1..month.lengthOfMonth()).associateWith{d->spent(rows.filter{between(it,month.atDay(d),month.atDay(d))})}
     val maxSpend=maxOf(1L,daily.values.maxOrNull()?:1L)
     val chosen=rows.filter{between(it,selected,selected)}
     Column(Modifier.fillMaxSize()){
         Heading("Calendar","Your spending, day by day.")
-        Column(Modifier.padding(horizontal=18.dp).clip(RoundedCornerShape(25.dp)).background(MaterialTheme.colorScheme.surface).padding(15.dp)){
+        Column(Modifier.padding(horizontal=18.dp).animateContentSize().pointerInput(month){detectHorizontalDragGestures(onHorizontalDrag={_,dx->monthDrag+=dx},onDragEnd={if(monthDrag < -60f){month=month.plusMonths(1);selected=month.atDay(1)}else if(monthDrag > 60f){month=month.minusMonths(1);selected=month.atDay(1)};monthDrag=0f})}.clip(RoundedCornerShape(25.dp)).background(MaterialTheme.colorScheme.surface).padding(15.dp)){
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
                 IconButton(onClick={month=month.minusMonths(1);selected=month.atDay(1)}){Icon(Icons.Default.ChevronLeft,null)}
                 Text(month.format(DateTimeFormatter.ofPattern("MMMM yyyy")),fontWeight=FontWeight.SemiBold,fontSize=17.sp)
