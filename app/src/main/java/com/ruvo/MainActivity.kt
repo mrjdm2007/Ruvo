@@ -104,7 +104,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     var pinSetup by remember { mutableStateOf(false) }
     var search by remember { mutableStateOf("") }
     val colors=if(dark) darkColorScheme(primary=Sage,background=Color(0xFF111A16),surface=Color(0xFF1C2821)) else lightColorScheme(primary=Forest,background=Ivory,surface=Color.White)
-    BackHandler {
+    BackHandler(enabled=!dialog && !categoryDialog && !budgetDialog && !pinSetup && !locked) {
         if (page != 0) page = 0
         else (context as? Activity)?.moveTaskToBack(true)
     }
