@@ -30,7 +30,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ruvo.data.*
-import java.text.NumberFormat\nimport java.math.BigDecimal\nimport java.math.RoundingMode
+import java.text.NumberFormat
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.*
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -51,7 +53,8 @@ class MainActivity : ComponentActivity() {
     companion object { const val ACTION_QUICK_ADD = "com.ruvo.QUICK_ADD" }
 }
 
-private fun cash(paise: Long): String = NumberFormat.getCurrencyInstance(Locale("en","IN")).apply { maximumFractionDigits=2; minimumFractionDigits=if(paise % 100L == 0L) 0 else 2 }.format(paise/100.0)\nprivate fun parsePaise(input:String):Long? = runCatching { val amount=BigDecimal(input.trim()); if(amount<=BigDecimal.ZERO || amount.scale()>2) null else amount.movePointRight(2).setScale(0,RoundingMode.HALF_UP).longValueExact() }.getOrNull()
+private fun cash(paise: Long): String = NumberFormat.getCurrencyInstance(Locale("en","IN")).apply { maximumFractionDigits=2; minimumFractionDigits=if(paise % 100L == 0L) 0 else 2 }.format(paise/100.0)
+private fun parsePaise(input:String):Long? = runCatching { val amount=BigDecimal(input.trim()); if(amount<=BigDecimal.ZERO || amount.scale()>2) null else amount.movePointRight(2).setScale(0,RoundingMode.HALF_UP).longValueExact() }.getOrNull()
 private fun midnight(d: LocalDate) = d.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 private fun between(t:RuvoTransaction,a:LocalDate,b:LocalDate)=t.timestamp>=midnight(a) && t.timestamp<midnight(b.plusDays(1))
 private fun spent(rows:List<RuvoTransaction>)=rows.filter{it.type=="EXPENSE"}.sumOf{it.amountPaise}
