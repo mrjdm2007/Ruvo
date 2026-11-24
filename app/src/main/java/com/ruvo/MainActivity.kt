@@ -63,7 +63,8 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     var editing by remember { mutableStateOf<RuvoTransaction?>(null) }
     var categoryDialog by remember { mutableStateOf(false) }
     var budgetDialog by remember { mutableStateOf(false) }
-    val prefs = remember { androidx.compose.ui.platform.LocalContext.current.getSharedPreferences("ruvo_preferences", 0) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = remember(context) { context.getSharedPreferences("ruvo_preferences", 0) }
     var budget by remember { mutableStateOf(prefs.getString("monthly_budget", "15000") ?: "15000") }
     var dark by remember { mutableStateOf(prefs.getBoolean("dark_mode", false)) }
     var search by remember { mutableStateOf("") }
