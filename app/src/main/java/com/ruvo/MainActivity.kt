@@ -190,7 +190,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         item { Row(Modifier.fillMaxWidth().padding(horizontal=22.dp),horizontalArrangement=Arrangement.SpaceBetween){Section("Monthly budget", "Your spending limit");Text("Edit",color=Forest,fontSize=12.sp,modifier=Modifier.clickable{onBudget()}.padding(5.dp))} }
         item {
             val p=(current.toFloat()/budget.coerceAtLeast(1)).coerceIn(0f,1f)
-            Column(Modifier.padding(horizontal=18.dp).clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).padding(16.dp)){
+            Column(Modifier.padding(horizontal=18.dp).glass(RoundedCornerShape(22.dp)).padding(16.dp)){
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text("Remaining",color=Muted,fontSize=12.sp);Text(cash((budget-current).coerceAtLeast(0)),fontWeight=FontWeight.SemiBold)}
                 Spacer(Modifier.height(9.dp));Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(Color(0xFFE6EAE3))){Box(Modifier.fillMaxWidth(p).fillMaxHeight().background(if(p>=1)Color(0xFFB45E52) else Forest))}
                 Text((p*100).toInt().toString()+"% used",fontSize=10.sp,color=Muted,modifier=Modifier.padding(top=6.dp))
@@ -278,7 +278,8 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             LazyColumn(contentPadding=PaddingValues(horizontal=18.dp,vertical=4.dp)){
                 items(shown,key={it.id}){t->
                     var dx by remember{mutableFloatStateOf(0f)}
-                    val swipeOffset by animateDpAsState(dx.dp, animationSpec=spring(dampingRatio=0.72f, stiffness=420f), label="swipe-row")
+                    val density = androidx.compose.ui.platform.LocalDensity.current
+                    val swipeOffset by animateDpAsState(with(density) { dx.toDp() }, animationSpec=spring(dampingRatio=0.72f, stiffness=420f), label="swipe-row")
                     Row(Modifier.fillMaxWidth().offset(x=swipeOffset).clip(RoundedCornerShape(14.dp)).glass(RoundedCornerShape(14.dp)).pointerInput(t.id){detectHorizontalDragGestures(onHorizontalDrag={_,d->dx=(dx+d).coerceIn(-92f,92f)},onDragEnd={if(dx < -55)pending=t else if(dx>55)onEdit(t);dx=0f})}.clickable{onEdit(t)}.padding(13.dp),verticalAlignment=Alignment.CenterVertically){
                         Column(Modifier.weight(1f)){Text(cats.find{it.id==t.categoryId}?.name?:"Entry",fontSize=13.sp,fontWeight=FontWeight.Medium);Text(t.note.ifBlank{"Tap to edit"},fontSize=10.sp,color=Muted)}
                         Text((if(t.type=="INCOME")"+" else "−")+cash(t.amountPaise),fontSize=13.sp,fontWeight=FontWeight.SemiBold)
@@ -312,8 +313,8 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         }
     },confirmButton={TextButton(onClick={val paise=parsePaise(amount);if(paise!=null&&category!=0L)onSave(RuvoTransaction(id=existing?.id?:0,amountPaise=paise,categoryId=category,note=note.trim(),timestamp=date,type=type))}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
     if(showDatePicker){
-        val picker=rememberDatePickerState(initialSelectedDateMillis=date)
-        DatePickerDialog(onDismissRequest={showDatePicker=false},confirmButton={TextButton(onClick={picker.selectedDateMillis?.let{date=LocalDate.ofEpochDay(it/86400000L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()};showDatePicker=false}){Text("Select")}},dismissButton={TextButton(onClick={showDatePicker=false}){Text("Cancel")}}){DatePicker(state=picker)}
+        val picker=rememberDatePickerState(initialSelectedDateMillis=Instant.ofEpochMilli(date).atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
+        DatePickerDialog(onDismissRequest={showDatePicker=false},confirmButton={TextButton(onClick={picker.selectedDateMillis?.let{date=Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()};showDatePicker=false}){Text("Select")}},dismissButton={TextButton(onClick={showDatePicker=false}){Text("Cancel")}}){DatePicker(state=picker)}
     }
 }
 
@@ -355,7 +356,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     val orderedCats=cats.sortedBy { val index=order.indexOf(it.id); if(index<0) Int.MAX_VALUE else index }
     LazyColumn(contentPadding=PaddingValues(bottom=90.dp)){
         item{Heading("More","Make RUVO feel like yours.")}
-        item{Column(Modifier.padding(horizontal=18.dp).clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).padding(16.dp)){
+        item{Column(Modifier.padding(horizontal=18.dp).glass(RoundedCornerShape(22.dp)).padding(16.dp)){
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Column{Text("Dark appearance",fontWeight=FontWeight.Medium);Text("A quieter look after dark",fontSize=11.sp,color=Muted)};Switch(dark,onDark)}
             HorizontalDivider(Modifier.padding(vertical=10.dp))
             Row(Modifier.fillMaxWidth().clickable{onSetPin()}.padding(vertical=7.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("App PIN lock");Text(if(pinEnabled)"Change PIN" else "Set PIN",color=Forest)}
