@@ -40,6 +40,14 @@ interface RuvoDao {
     @Query("UPDATE transactions SET categoryId = :replacementId WHERE categoryId = :id") suspend fun moveTransactionsToCategory(id: Long, replacementId: Long)
     @Query("SELECT COUNT(*) FROM categories") suspend fun categoryCount(): Int
     @Query("SELECT * FROM categories WHERE id = :id LIMIT 1") suspend fun category(id: Long): RuvoCategory?
+    @Query("SELECT * FROM categories WHERE isIncome = :isIncome ORDER BY name COLLATE NOCASE") suspend fun categoriesOfType(isIncome: Boolean): List<RuvoCategory>?
+    @Transaction
+    suspend fun deleteCategorySafely(item: RuvoCategory) {
+        val fallback = categoriesOfType(item.isIncome)?.firstOrNull { it.id != item.id }
+        val replacementId = fallback?.id ?: insertCategory(RuvoCategory(name=if(item.isIncome) "Other income" else "Other", icon="category", color=0xFF87958B, isIncome=item.isIncome))
+        moveTransactionsToCategory(item.id, replacementId)
+        deleteCategory(item)
+    }
 }
 
 @Database(entities = [RuvoTransaction::class, RuvoCategory::class], version = 1, exportSchema = false)
