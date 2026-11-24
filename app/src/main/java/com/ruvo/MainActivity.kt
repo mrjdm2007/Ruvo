@@ -191,7 +191,10 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         item {
             val p=(current.toFloat()/budget.coerceAtLeast(1)).coerceIn(0f,1f)
             Column(Modifier.padding(horizontal=18.dp).glass(RoundedCornerShape(22.dp)).padding(16.dp)){
-                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text("Remaining",color=Muted,fontSize=12.sp);Text(cash((budget-current).coerceAtLeast(0)),fontWeight=FontWeight.SemiBold)}
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
+                    Text(if(current>budget) "Over budget" else "Remaining",color=Muted,fontSize=12.sp)
+                    Text(if(current>budget) cash(current-budget) else cash(budget-current),fontWeight=FontWeight.SemiBold,color=if(current>budget) Color(0xFFB45E52) else MaterialTheme.colorScheme.onSurface)
+                }
                 Spacer(Modifier.height(9.dp));Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(Color(0xFFE6EAE3))){Box(Modifier.fillMaxWidth(p).fillMaxHeight().background(if(p>=1)Color(0xFFB45E52) else Forest))}
                 Text((p*100).toInt().toString()+"% used",fontSize=10.sp,color=Muted,modifier=Modifier.padding(top=6.dp))
             }
