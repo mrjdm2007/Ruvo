@@ -33,12 +33,12 @@ import com.ruvo.data.*
 import java.text.NumberFormat
 import java.time.*
 import java.time.format.DateTimeFormatter
-import java.util.Locale
+import java.util.Locale\nimport java.security.MessageDigest
 
 private val Forest = Color(0xFF173F32)
 private val Sage = Color(0xFFA9C6A5)
 private val Ivory = Color(0xFFF3F1E9)
-private val Muted = Color(0xFF7C887F)
+private val Muted = Color(0xFF7C887F)\nprivate fun pinDigest(pin:String)=MessageDigest.getInstance("SHA-256").digest(pin.toByteArray()).joinToString("") { "%02x".format(it) }
 
 class MainActivity : ComponentActivity() {
     private val vm: RuvoViewModel by viewModels()
@@ -66,7 +66,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = remember(context) { context.getSharedPreferences("ruvo_preferences", 0) }
     var budget by remember { mutableStateOf(prefs.getString("monthly_budget", "15000") ?: "15000") }
-    var dark by remember { mutableStateOf(prefs.getBoolean("dark_mode", false)) }
+    var dark by remember { mutableStateOf(prefs.getBoolean("dark_mode", false)) }\n    var pinHash by remember { mutableStateOf(prefs.getString("app_pin_hash", null)) }\n    var locked by remember(pinHash) { mutableStateOf(pinHash != null) }\n    var pinEntry by remember { mutableStateOf("") }\n    var pinError by remember { mutableStateOf(false) }\n    var pinSetup by remember { mutableStateOf(false) }
     var search by remember { mutableStateOf("") }
     val colors=if(dark) darkColorScheme(primary=Sage,background=Color(0xFF111A16),surface=Color(0xFF1C2821)) else lightColorScheme(primary=Forest,background=Ivory,surface=Color.White)
     MaterialTheme(colorScheme=colors) {
@@ -85,13 +85,13 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                     0 -> Home(rows,cats,budget.toLongOrNull()?.times(100)?:1500000L,onBudget={budgetDialog=true},onEdit={editing=it;dialog=true})
                     1 -> CalendarPage(rows,cats,onEdit={editing=it;dialog=true})
                     2 -> History(rows,cats,search,{search=it},onEdit={editing=it;dialog=true},onDelete={vm.delete(it)},onRestore={vm.restore(it)})
-                    else -> More(cats,dark,{dark=it;prefs.edit().putBoolean("dark_mode",it).apply()},{editingCategory=null;categoryDialog=true},{budgetDialog=true},budget,onEditCategory={editingCategory=it;categoryDialog=true})
+                    else -> More(cats,dark,{dark=it;prefs.edit().putBoolean("dark_mode",it).apply()},{editingCategory=null;categoryDialog=true},{budgetDialog=true},budget,onEditCategory={editingCategory=it;categoryDialog=true},pinEnabled=pinHash!=null,onSetPin={pinSetup=true})
                 }
             }
         }
         if(dialog) EntryDialog(editing,cats,{dialog=false;editing=null},{vm.save(it);dialog=false;editing=null},{categoryDialog=true})
         if(categoryDialog) CategoryDialog(editingCategory,{categoryDialog=false;editingCategory=null},{item->if(item.id==0L) vm.addCategory(item.name,item.icon,item.color,item.isIncome) else vm.updateCategory(item);categoryDialog=false;editingCategory=null},{item->vm.deleteCategory(item);categoryDialog=false;editingCategory=null})
-        if(budgetDialog) BudgetDialog(budget,{budget=it;prefs.edit().putString("monthly_budget",it).apply();budgetDialog=false},{budgetDialog=false})
+        if(budgetDialog) BudgetDialog(budget,{budget=it;prefs.edit().putString("monthly_budget",it).apply();budgetDialog=false},{budgetDialog=false})\n        if(pinSetup) PinSetupDialog({pinSetup=false},{pin->pinHash=pinDigest(pin);prefs.edit().putString("app_pin_hash",pinHash).apply();locked=false;pinSetup=false})\n        if(locked) AlertDialog(onDismissRequest={},title={Text("RUVO is locked")},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){Text("Enter your app PIN to continue.",fontSize=12.sp,color=Muted);OutlinedTextField(pinEntry,{pinEntry=it.filter(Char::isDigit).take(6);pinError=false},label={Text("PIN")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),singleLine=true,isError=pinError);if(pinError)Text("Incorrect PIN",color=Color(0xFFB45E52),fontSize=11.sp)}},confirmButton={TextButton(onClick={if(pinHash!=null && pinDigest(pinEntry)==pinHash){locked=false;pinEntry="";pinError=false}else pinError=true}){Text("Unlock")}})
     }
 }
 
@@ -282,11 +282,17 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     if(confirmDelete && existing!=null) AlertDialog(onDismissRequest={confirmDelete=false},title={Text("Delete category?")},text={Text("Existing transactions will be moved to another category of the same type.")},confirmButton={TextButton(onClick={onDelete(existing)}){Text("Delete")}},dismissButton={TextButton(onClick={confirmDelete=false}){Text("Cancel")}})
 }
 
+@Composable private fun PinSetupDialog(onDismiss:()->Unit,onSave:(String)->Unit){
+    var first by remember{mutableStateOf("")}
+    var second by remember{mutableStateOf("")}
+    var error by remember{mutableStateOf(false)}
+    AlertDialog(onDismissRequest=onDismiss,title={Text("Set app PIN")},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){Text("Choose a 4–6 digit PIN. It stays on this device.",fontSize=12.sp,color=Muted);OutlinedTextField(first,{first=it.filter(Char::isDigit).take(6)},label={Text("New PIN")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),singleLine=true);OutlinedTextField(second,{second=it.filter(Char::isDigit).take(6)},label={Text("Confirm PIN")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),singleLine=true);if(error)Text("PINs must match and contain 4–6 digits.",color=Color(0xFFB45E52),fontSize=11.sp)}},confirmButton={TextButton(onClick={if(first.length in 4..6 && first==second)onSave(first) else error=true}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
+}
 @Composable private fun BudgetDialog(current:String,onSave:(String)->Unit,onDismiss:()->Unit){
     var value by remember{mutableStateOf(current)}
     AlertDialog(onDismissRequest=onDismiss,title={Text("Monthly budget")},text={OutlinedTextField(value,{value=it},label={Text("Budget in ₹")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number))},confirmButton={TextButton(onClick={onSave(value)}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
 }
-@Composable private fun More(cats:List<RuvoCategory>,dark:Boolean,onDark:(Boolean)->Unit,onAdd:()->Unit,onBudget:()->Unit,budget:String,onEditCategory:(RuvoCategory)->Unit){
+@Composable private fun More(cats:List<RuvoCategory>,dark:Boolean,onDark:(Boolean)->Unit,onAdd:()->Unit,onBudget:()->Unit,budget:String,onEditCategory:(RuvoCategory)->Unit,pinEnabled:Boolean,onSetPin:()->Unit){
     LazyColumn(contentPadding=PaddingValues(bottom=90.dp)){
         item{Heading("More","Make RUVO feel like yours.")}
         item{Column(Modifier.padding(horizontal=18.dp).clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).padding(16.dp)){
