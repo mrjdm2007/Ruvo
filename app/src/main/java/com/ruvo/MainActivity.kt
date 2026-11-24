@@ -105,7 +105,7 @@ class MainActivity : ComponentActivity() {
     companion object { const val ACTION_QUICK_ADD = "com.ruvo.QUICK_ADD" }
 }
 
-private fun cash(paise: Long): String = NumberFormat.getCurrencyInstance(Locale("en","IN")).apply { maximumFractionDigits=2; minimumFractionDigits=if(paise % 100L == 0L) 0 else 2 }.format(paise/100.0)
+private fun cash(paise: Long): String = NumberFormat.getCurrencyInstance(Locale("en","IN")).apply { maximumFractionDigits=2; minimumFractionDigits=if(paise % 100L == 0L) 0 else 2 }.format(BigDecimal.valueOf(paise, 2))
 private fun parsePaise(input:String):Long? = runCatching { val amount=BigDecimal(input.trim()); if(amount<=BigDecimal.ZERO || amount.scale()>2) null else amount.movePointRight(2).setScale(0,RoundingMode.HALF_UP).longValueExact() }.getOrNull()
 private fun midnight(d: LocalDate) = d.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 private fun between(t:RuvoTransaction,a:LocalDate,b:LocalDate)=t.timestamp>=midnight(a) && t.timestamp<midnight(b.plusDays(1))
@@ -423,7 +423,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable private fun EntryDialog(existing:RuvoTransaction?,cats:List<RuvoCategory>,onDismiss:()->Unit,onSave:(RuvoTransaction)->Unit,onAddCategory:()->Unit){
-    var amount by remember(existing){mutableStateOf(if(existing==null)"" else (existing.amountPaise/100.0).toString())}
+    var amount by remember(existing){mutableStateOf(if(existing==null)"" else BigDecimal.valueOf(existing.amountPaise,2).stripTrailingZeros().toPlainString())}
     var note by remember(existing){mutableStateOf(existing?.note?:"")}
     var type by remember(existing){mutableStateOf(existing?.type?:"EXPENSE")}
     var category by remember(existing,cats){mutableLongStateOf(existing?.categoryId?:cats.firstOrNull{it.isIncome==(type=="INCOME")}?.id?:0L)}
