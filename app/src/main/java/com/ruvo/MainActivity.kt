@@ -21,6 +21,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -49,6 +51,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.ruvo.data.*
 import java.text.NumberFormat
 import java.math.BigDecimal
@@ -118,6 +123,18 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     var budgetDialog by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
     val haptic = LocalHapticFeedback.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, pinHash) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP && pinHash != null) {
+                locked = true
+                pinEntry = ""
+                pinError = false
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     val prefs = remember(context) { context.getSharedPreferences("ruvo_preferences", 0) }
     var budget by remember { mutableStateOf(prefs.getString("monthly_budget", "15000") ?: "15000") }
     var dark by remember { mutableStateOf(prefs.getBoolean("dark_mode", false)) }
@@ -308,10 +325,11 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     val monthRows=rows.filter{between(it,month.atDay(1),month.atEndOfMonth())}
     val monthExpense=spent(monthRows)
     val monthIncome=monthRows.filter{it.type=="INCOME"}.sumOf{it.amountPaise}
-    val monthAverage=if(month.lengthOfMonth()>0)monthExpense/month.lengthOfMonth() else 0L
+    val averageDays=when { month==YearMonth.now() -> LocalDate.now().dayOfMonth; month.isAfter(YearMonth.now()) -> 0; else -> month.lengthOfMonth() }
+    val monthAverage=if(averageDays>0)monthExpense/averageDays else 0L
     val selectedIncome=chosen.filter{it.type=="INCOME"}.sumOf{it.amountPaise}
     val haptic=LocalHapticFeedback.current
-    Column(Modifier.fillMaxSize()){
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())){
         Heading("Calendar","Your spending, day by day.")
         Row(Modifier.fillMaxWidth().padding(horizontal=20.dp),horizontalArrangement=Arrangement.SpaceBetween){
             Column { Text("Monthly spending",fontSize=10.sp,color=Muted);Text(cash(monthExpense),fontSize=21.sp,fontWeight=FontWeight.SemiBold,color=Forest) }
