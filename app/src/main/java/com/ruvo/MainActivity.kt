@@ -35,8 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Offset
-import androidx.compose.ui.graphics.Size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -117,6 +117,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     var editingCategory by remember { mutableStateOf<RuvoCategory?>(null) }
     var budgetDialog by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
+    val haptic = LocalHapticFeedback.current
     val prefs = remember(context) { context.getSharedPreferences("ruvo_preferences", 0) }
     var budget by remember { mutableStateOf(prefs.getString("monthly_budget", "15000") ?: "15000") }
     var dark by remember { mutableStateOf(prefs.getBoolean("dark_mode", false)) }
@@ -136,11 +137,11 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             NavigationBar(containerColor=colors.surface.copy(alpha=0.92f), tonalElevation=8.dp) {
                 val icons=listOf(Icons.Default.SpaceDashboard,Icons.Default.CalendarMonth,Icons.Default.ReceiptLong,Icons.Default.Tune)
                 listOf("Home","Calendar","History","More").forEachIndexed { i,s ->
-                    NavigationBarItem(selected=page==i,onClick={page=i},icon={Icon(icons[i],null)},label={Text(s,fontSize=10.sp)})
+                    NavigationBarItem(selected=page==i,onClick={haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);page=i},icon={Icon(icons[i],null)},label={Text(s,fontSize=10.sp)})
                 }
             }
         }, floatingActionButton={
-            FloatingActionButton(onClick={androidx.compose.ui.platform.LocalHapticFeedback.current.performHapticFeedback(HapticFeedbackType.LongPress);editing=null;dialog=true},containerColor=Forest,contentColor=Color.White,shape=RoundedCornerShape(20.dp)){Icon(Icons.Default.Add,null)}
+            FloatingActionButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress);editing=null;dialog=true},containerColor=Forest,contentColor=Color.White,shape=RoundedCornerShape(20.dp)){Icon(Icons.Default.Add,null)}
         }) { padding ->
             Box(Modifier.fillMaxSize().padding(padding)) {
                 AnimatedContent(targetState=page,transitionSpec={fadeIn(tween(220))+slideInHorizontally(initialOffsetX={it/24}) togetherWith fadeOut(tween(140))},label="page-transition") { activePage ->
