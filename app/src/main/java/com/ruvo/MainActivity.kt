@@ -438,31 +438,58 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable private fun EntryDialog(existing:RuvoTransaction?,cats:List<RuvoCategory>,onDismiss:()->Unit,onSave:(RuvoTransaction)->Unit,onAddCategory:()->Unit){
+@Composable private fun EntryDialog(existing:RuvoTransaction?,cats:List<RuvoCategory>,lastExpenseCategory:Long,lastIncomeCategory:Long,onDismiss:()->Unit,onSave:(RuvoTransaction)->Unit,onAddCategory:()->Unit){
     var amount by remember(existing){mutableStateOf(if(existing==null)"" else BigDecimal.valueOf(existing.amountPaise,2).stripTrailingZeros().toPlainString())}
     var note by remember(existing){mutableStateOf(existing?.note?:"")}
     var type by remember(existing){mutableStateOf(existing?.type?:"EXPENSE")}
-    var category by remember(existing,cats){mutableLongStateOf(existing?.categoryId?:cats.firstOrNull{it.isIncome==(type=="INCOME")}?.id?:0L)}
+    var category by remember(existing,cats,lastExpenseCategory,lastIncomeCategory){mutableLongStateOf(existing?.categoryId?:run {
+        val remembered=if(type=="INCOME")lastIncomeCategory else lastExpenseCategory
+        cats.firstOrNull{it.id==remembered&&it.isIncome==(type=="INCOME")}?.id ?: cats.firstOrNull{it.isIncome==(type=="INCOME")}?.id ?: 0L
+    })}
     var date by remember(existing){mutableStateOf(existing?.timestamp?:System.currentTimeMillis())}
-    var showDatePicker by remember { mutableStateOf(false) }
+    var showDatePicker by remember{mutableStateOf(false)}
     val options=cats.filter{it.isIncome==(type=="INCOME")}
-    AlertDialog(onDismissRequest=onDismiss,title={Text(if(existing==null)"New entry" else "Edit entry",fontWeight=FontWeight.SemiBold)},text={
-        Column(verticalArrangement=Arrangement.spacedBy(10.dp)){
-            Row(horizontalArrangement=Arrangement.spacedBy(7.dp)){listOf("EXPENSE","INCOME").forEach{v->FilterChip(selected=type==v,onClick={type=v;category=cats.firstOrNull{it.isIncome==(v=="INCOME")}?.id?:0L},label={Text(if(v=="EXPENSE")"Expense" else "Income")})}}
-            OutlinedTextField(amount,{amount=it},label={Text("Amount (₹)")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),singleLine=true,modifier=Modifier.fillMaxWidth())
-            Text("CATEGORY",fontSize=10.sp,color=Muted,fontWeight=FontWeight.SemiBold)
-            options.chunked(3).forEach{group->Row(horizontalArrangement=Arrangement.spacedBy(5.dp)){group.forEach{c->FilterChip(selected=category==c.id,onClick={category=c.id},label={Text(c.name,fontSize=10.sp)})}}}
-            TextButton(onClick=onAddCategory){Icon(Icons.Default.Add,null);Text("New category")}
-            OutlinedTextField(note,{note=it},label={Text("Note (optional)")},singleLine=true,modifier=Modifier.fillMaxWidth())
-            TextButton(onClick={showDatePicker=true}){Icon(Icons.Default.Today,null);Text("Date · "+Instant.ofEpochMilli(date).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("d MMM yyyy")))}
+    ModalBottomSheet(onDismissRequest=onDismiss,containerColor=NightSurface,contentColor=TextPrimary,tonalElevation=0.dp,dragHandle={BottomSheetDefaults.DragHandle(color=Color(0xFF60776A))}){
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(horizontal=20.dp).padding(bottom=18.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(13.dp)){
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
+                Column{Text(if(existing==null)"New entry" else "Edit entry",fontSize=21.sp,fontWeight=FontWeight.SemiBold);Text("Keep every rupee in view",fontSize=11.sp,color=Muted)}
+                IconButton(onClick=onDismiss){Icon(Icons.Default.Close,"Close",tint=Muted)}
+            }
+            Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(NightElevated).padding(4.dp),horizontalArrangement=Arrangement.spacedBy(5.dp)){
+                listOf("EXPENSE","INCOME").forEach{v->
+                    val selected=type==v
+                    Box(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(if(selected)Color(0xFF315642) else Color.Transparent).clickable{
+                        type=v
+                        val last=if(v=="INCOME")lastIncomeCategory else lastExpenseCategory
+                        category=last.takeIf{id->cats.any{it.id==id&&it.isIncome==(v=="INCOME")}}?:cats.firstOrNull{it.isIncome==(v=="INCOME")}?.id?:0L
+                    }.padding(vertical=11.dp),contentAlignment=Alignment.Center){Text(if(v=="EXPENSE")"Expense" else "Income",fontSize=13.sp,fontWeight=FontWeight.SemiBold,color=if(selected)Color(0xFFE8F7EC) else Color(0xFFAABBB0))}
+                }
+            }
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Brush.verticalGradient(listOf(Color(0xFF22352B),Color(0xFF192720)))).border(1.dp,Color.White.copy(alpha=.10f),RoundedCornerShape(22.dp)).padding(16.dp)){
+                Text("AMOUNT",fontSize=10.sp,color=Color(0xFFB4D8BF),letterSpacing=1.3.sp,fontWeight=FontWeight.SemiBold)
+                Row(verticalAlignment=Alignment.CenterVertically){
+                    Text("₹",fontSize=28.sp,color=Mint,fontWeight=FontWeight.Medium)
+                    OutlinedTextField(value=amount,onValueChange={v->amount=v.filter{it.isDigit()||it=='.'}.let{if(it.count{c->c=='.'}<=1)it else amount}},modifier=Modifier.fillMaxWidth(),placeholder={Text("0",color=Color(0xFF72877A))},textStyle=MaterialTheme.typography.headlineLarge.copy(fontWeight=FontWeight.SemiBold,color=TextPrimary),keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),singleLine=true,colors=OutlinedTextFieldDefaults.colors(focusedBorderColor=Color.Transparent,unfocusedBorderColor=Color.Transparent,focusedContainerColor=Color.Transparent,unfocusedContainerColor=Color.Transparent,focusedTextColor=TextPrimary,unfocusedTextColor=TextPrimary,cursorColor=Mint))
+                }
+            }
+            Text("CATEGORY",fontSize=10.sp,color=Muted,fontWeight=FontWeight.SemiBold,letterSpacing=1.sp)
+            options.chunked(3).forEach{group->Row(horizontalArrangement=Arrangement.spacedBy(7.dp)){group.forEach{c->
+                val selected=category==c.id
+                FilterChip(selected=selected,onClick={category=c.id},label={Text(c.name,fontSize=11.sp,maxLines=1)},leadingIcon={if(selected)Icon(Icons.Default.Check,null,Modifier.size(14.dp))},colors=FilterChipDefaults.filterChipColors(selectedContainerColor=Color(0xFF315642),selectedLabelColor=Color(0xFFE8F7EC),selectedLeadingIconColor=Mint,containerColor=NightElevated,labelColor=Color(0xFFD1DDD5),iconColor=Muted))
+            }}}
+            TextButton(onClick=onAddCategory,contentPadding=PaddingValues(horizontal=8.dp,vertical=2.dp)){Icon(Icons.Default.Add,null,Modifier.size(16.dp));Spacer(Modifier.width(5.dp));Text("New category",fontSize=12.sp)}
+            OutlinedTextField(note,{note=it},label={Text("Note (optional)")},singleLine=true,modifier=Modifier.fillMaxWidth(),colors=OutlinedTextFieldDefaults.colors(focusedBorderColor=Mint,unfocusedBorderColor=Color(0xFF46594E),focusedLabelColor=Mint,focusedTextColor=TextPrimary,unfocusedTextColor=TextPrimary,cursorColor=Mint))
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
+                TextButton(onClick={showDatePicker=true}){Icon(Icons.Default.CalendarToday,null,Modifier.size(16.dp));Spacer(Modifier.width(6.dp));Text(Instant.ofEpochMilli(date).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("d MMM yyyy")),fontSize=12.sp)}
+                Button(onClick={val paise=parsePaise(amount);if(paise!=null&&category!=0L)onSave(RuvoTransaction(id=existing?.id?:0,amountPaise=paise,categoryId=category,note=note.trim(),timestamp=date,type=type))},enabled=parsePaise(amount)!=null&&category!=0L,shape=RoundedCornerShape(14.dp),colors=ButtonDefaults.buttonColors(containerColor=Mint,contentColor=Color(0xFF082016))){Text(if(existing==null)"Save entry" else "Save changes",fontWeight=FontWeight.SemiBold)}
+            }
         }
-    },confirmButton={TextButton(onClick={val paise=parsePaise(amount);if(paise!=null&&category!=0L)onSave(RuvoTransaction(id=existing?.id?:0,amountPaise=paise,categoryId=category,note=note.trim(),timestamp=date,type=type))}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
+    }
     if(showDatePicker){
         val picker=rememberDatePickerState(initialSelectedDateMillis=Instant.ofEpochMilli(date).atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
         DatePickerDialog(onDismissRequest={showDatePicker=false},confirmButton={TextButton(onClick={picker.selectedDateMillis?.let{date=Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()};showDatePicker=false}){Text("Select")}},dismissButton={TextButton(onClick={showDatePicker=false}){Text("Cancel")}}){DatePicker(state=picker)}
     }
 }
-
 @Composable private fun CategoryDialog(existing:RuvoCategory?,onDismiss:()->Unit,onSave:(RuvoCategory)->Unit,onDelete:(RuvoCategory)->Unit){
     var confirmDelete by remember(existing){mutableStateOf(false)}
     var name by remember(existing){mutableStateOf(existing?.name?:"")}
