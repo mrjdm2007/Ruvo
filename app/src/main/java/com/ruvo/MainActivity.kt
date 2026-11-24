@@ -397,56 +397,96 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable private fun History(rows:List<RuvoTransaction>,cats:List<RuvoCategory>,query:String,onQuery:(String)->Unit,onEdit:(RuvoTransaction)->Unit,onDelete:(RuvoTransaction)->Unit,onRestore:(RuvoTransaction)->Unit){
-    val snackbar = remember { SnackbarHostState() }
-    val haptic = LocalHapticFeedback.current
-    var deleted by remember { mutableStateOf<RuvoTransaction?>(null) }
+    val snackbar=remember{SnackbarHostState()}
+    val haptic=LocalHapticFeedback.current
+    var deleted by remember{mutableStateOf<RuvoTransaction?>(null)}
     var filter by remember{mutableStateOf("All")}
+    var categoryFilter by remember{mutableStateOf<Long?>(null)}
     var fromDate by remember{mutableStateOf<LocalDate?>(null)}
     var toDate by remember{mutableStateOf<LocalDate?>(null)}
     var datePickerTarget by remember{mutableStateOf<String?>(null)}
     var pending by remember{mutableStateOf<RuvoTransaction?>(null)}
-    val shown=rows.filter{(filter=="All"||it.type==filter)&&(fromDate==null||it.timestamp>=midnight(fromDate!!))&&(toDate==null||it.timestamp<midnight(toDate!!.plusDays(1)))&&(query.isBlank()||it.note.contains(query,true)||cats.find{c->c.id==it.categoryId}?.name?.contains(query,true)==true||cash(it.amountPaise).contains(query,true))}
-    LaunchedEffect(deleted) {
-        val item = deleted
-        if (item != null) {
-            val result = snackbar.showSnackbar("Entry deleted", actionLabel="Undo", withDismissAction=true)
-            if (result == SnackbarResult.ActionPerformed) onRestore(item)
-            deleted = null
-        }
+    var showCategoryMenu by remember{mutableStateOf(false)}
+    var showSortMenu by remember{mutableStateOf(false)}
+    var sort by remember{mutableStateOf("Newest first")}
+    val invalidRange=fromDate!=null&&toDate!=null&&toDate!!.isBefore(fromDate!!)
+    val filtered=rows.filter{t->
+        (filter=="All"||t.type==filter)&&(categoryFilter==null||t.categoryId==categoryFilter)&&
+        (fromDate==null||t.timestamp>=midnight(fromDate!!))&&(toDate==null||t.timestamp<midnight(toDate!!.plusDays(1)))&&
+        (query.isBlank()||t.note.contains(query,true)||cats.find{c->c.id==t.categoryId}?.name?.contains(query,true)==true||cash(t.amountPaise).contains(query,true))
     }
+    val shown=when(sort){"Oldest first"->filtered.sortedBy{it.timestamp};"Highest amount"->filtered.sortedByDescending{it.amountPaise};"Lowest amount"->filtered.sortedBy{it.amountPaise};else->filtered.sortedByDescending{it.timestamp}}
+    val totalExpense=shown.filter{it.type=="EXPENSE"}.sumOf{it.amountPaise}
+    val totalIncome=shown.filter{it.type=="INCOME"}.sumOf{it.amountPaise}
+    LaunchedEffect(deleted){val item=deleted;if(item!=null){val result=snackbar.showSnackbar("Transaction deleted",actionLabel="Undo",withDismissAction=true);if(result==SnackbarResult.ActionPerformed)onRestore(item);deleted=null}}
     Box(Modifier.fillMaxSize()){
         Column(Modifier.fillMaxSize()){
-            Heading("Activity","Every entry, all in one place.")
-            OutlinedTextField(query,onQuery,Modifier.fillMaxWidth().padding(horizontal=18.dp),placeholder={Text("Search transactions")},leadingIcon={Icon(Icons.Default.Search,null)},singleLine=true,shape=RoundedCornerShape(15.dp))
-            Row(Modifier.padding(horizontal=18.dp, vertical=10.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){listOf("All","EXPENSE","INCOME").forEach{FilterChip(selected=filter==it,onClick={filter=it},label={Text(when(it){"EXPENSE"->"Expenses";"INCOME"->"Income";else->it})})}}
-            Row(Modifier.fillMaxWidth().padding(horizontal=18.dp),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically){
-                OutlinedButton(onClick={datePickerTarget="from"},modifier=Modifier.weight(1f),contentPadding=PaddingValues(horizontal=8.dp,vertical=7.dp)){Icon(Icons.Default.CalendarMonth,null,modifier=Modifier.size(16.dp));Spacer(Modifier.width(5.dp));Text(fromDate?.format(DateTimeFormatter.ofPattern("d MMM yy"))?:"From date",fontSize=11.sp)}
-                OutlinedButton(onClick={datePickerTarget="to"},modifier=Modifier.weight(1f),contentPadding=PaddingValues(horizontal=8.dp,vertical=7.dp)){Icon(Icons.Default.CalendarMonth,null,modifier=Modifier.size(16.dp));Spacer(Modifier.width(5.dp));Text(toDate?.format(DateTimeFormatter.ofPattern("d MMM yy"))?:"To date",fontSize=11.sp)}
-                if(fromDate!=null||toDate!=null) TextButton(onClick={fromDate=null;toDate=null}){Text("Clear",fontSize=11.sp)}
+            Heading("History","Find, filter and review every transaction.")
+            OutlinedTextField(query,onQuery,Modifier.fillMaxWidth().padding(horizontal=18.dp),placeholder={Text("Search notes, categories or amounts")},leadingIcon={Icon(Icons.Default.Search,null)},singleLine=true,shape=RoundedCornerShape(15.dp),colors=OutlinedTextFieldDefaults.colors(focusedBorderColor=Mint,unfocusedBorderColor=Color(0xFF46594E),focusedTextColor=TextPrimary,unfocusedTextColor=TextPrimary,cursorColor=Mint))
+            Row(Modifier.fillMaxWidth().padding(horizontal=18.dp,vertical=8.dp),horizontalArrangement=Arrangement.spacedBy(7.dp)){
+                listOf("All","EXPENSE","INCOME").forEach{v->FilterChip(selected=filter==v,onClick={filter=v},label={Text(when(v){"EXPENSE"->"Expenses";"INCOME"->"Income";else->"All"})},colors=FilterChipDefaults.filterChipColors(selectedContainerColor=Mint,selectedLabelColor=Color(0xFF082016)))}
             }
-            if(fromDate!=null&&toDate!=null&&toDate!!.isBefore(fromDate!!)) Text("End date must be on or after the start date.",color=Color(0xFFFF9B91),fontSize=11.sp,modifier=Modifier.padding(horizontal=20.dp,vertical=4.dp))
-            LazyColumn(contentPadding=PaddingValues(horizontal=18.dp,vertical=4.dp)){
+            Row(Modifier.fillMaxWidth().padding(horizontal=18.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){
+                Box(Modifier.weight(1f)){
+                    OutlinedButton(onClick={showCategoryMenu=true},modifier=Modifier.fillMaxWidth(),contentPadding=PaddingValues(horizontal=7.dp,vertical=7.dp)){Icon(Icons.Default.Category,null,Modifier.size(15.dp));Spacer(Modifier.width(4.dp));Text(categoryFilter?.let{id->cats.find{it.id==id}?.name?:"Category"}?:"All categories",fontSize=10.sp,maxLines=1);Icon(Icons.Default.ArrowDropDown,null)}
+                    DropdownMenu(expanded=showCategoryMenu,onDismissRequest={showCategoryMenu=false}){DropdownMenuItem(text={Text("All categories")},onClick={categoryFilter=null;showCategoryMenu=false});cats.forEach{c->DropdownMenuItem(text={Text(c.name)},onClick={categoryFilter=c.id;showCategoryMenu=false})}}
+                }
+                Box(Modifier.weight(1f)){
+                    OutlinedButton(onClick={showSortMenu=true},modifier=Modifier.fillMaxWidth(),contentPadding=PaddingValues(horizontal=7.dp,vertical=7.dp)){Icon(Icons.Default.Sort,null,Modifier.size(15.dp));Spacer(Modifier.width(4.dp));Text(sort,fontSize=10.sp,maxLines=1);Icon(Icons.Default.ArrowDropDown,null)}
+                    DropdownMenu(expanded=showSortMenu,onDismissRequest={showSortMenu=false}){listOf("Newest first","Oldest first","Highest amount","Lowest amount").forEach{option->DropdownMenuItem(text={Text(option)},onClick={sort=option;showSortMenu=false})}}
+                }
+            }
+            Row(Modifier.fillMaxWidth().padding(horizontal=18.dp,vertical=5.dp),horizontalArrangement=Arrangement.spacedBy(5.dp)){
+                listOf("Today","7 days","30 days","This month").forEach{preset->FilterChip(selected=false,onClick={val today=LocalDate.now();when(preset){"Today"->{fromDate=today;toDate=today};"7 days"->{fromDate=today.minusDays(6);toDate=today};"30 days"->{fromDate=today.minusDays(29);toDate=today};else->{fromDate=today.withDayOfMonth(1);toDate=today}}},label={Text(preset,fontSize=9.sp)},colors=FilterChipDefaults.filterChipColors(containerColor=NightElevated,labelColor=TextPrimary))}
+            }
+            Row(Modifier.fillMaxWidth().padding(horizontal=18.dp,vertical=5.dp),horizontalArrangement=Arrangement.spacedBy(7.dp),verticalAlignment=Alignment.CenterVertically){
+                OutlinedButton(onClick={datePickerTarget="from"},modifier=Modifier.weight(1f),contentPadding=PaddingValues(horizontal=6.dp,vertical=6.dp)){Icon(Icons.Default.CalendarMonth,null,Modifier.size(14.dp));Spacer(Modifier.width(3.dp));Text(fromDate?.format(DateTimeFormatter.ofPattern("d MMM yy"))?:"From",fontSize=10.sp)}
+                OutlinedButton(onClick={datePickerTarget="to"},modifier=Modifier.weight(1f),contentPadding=PaddingValues(horizontal=6.dp,vertical=6.dp)){Icon(Icons.Default.CalendarMonth,null,Modifier.size(14.dp));Spacer(Modifier.width(3.dp));Text(toDate?.format(DateTimeFormatter.ofPattern("d MMM yy"))?:"To",fontSize=10.sp)}
+                TextButton(onClick={fromDate=null;toDate=null;categoryFilter=null;filter="All";onQuery("")}){Text("Reset",fontSize=10.sp)}
+            }
+            if(invalidRange)Text("End date must be on or after the start date.",color=Color(0xFFFF9B91),fontSize=11.sp,modifier=Modifier.padding(horizontal=20.dp))
+            Column(Modifier.fillMaxWidth().padding(horizontal=18.dp,vertical=4.dp).glass(RoundedCornerShape(18.dp)).padding(13.dp)){
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
+                    Column{Text("MATCHING TRANSACTIONS",fontSize=9.sp,color=Muted,letterSpacing=1.sp);Text(shown.size.toString(),fontSize=19.sp,fontWeight=FontWeight.SemiBold)}
+                    Column(horizontalAlignment=Alignment.End){Text("NET TOTAL",fontSize=9.sp,color=Muted,letterSpacing=1.sp);Text(cash(totalIncome-totalExpense),fontSize=15.sp,fontWeight=FontWeight.SemiBold,color=if(totalIncome>=totalExpense)Mint else Color(0xFFFF9B91))}
+                }
+                Spacer(Modifier.height(7.dp))
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text("Spent  "+cash(totalExpense),fontSize=10.sp,color=Muted);Text("Received  "+cash(totalIncome),fontSize=10.sp,color=Mint)}
+            }
+            if(shown.isEmpty())Column(Modifier.fillMaxWidth().weight(1f),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center){
+                Icon(Icons.Default.SearchOff,null,tint=Muted,modifier=Modifier.size(34.dp));Text("No transactions found",fontSize=15.sp,fontWeight=FontWeight.Medium,modifier=Modifier.padding(top=10.dp));Text("Try changing your search or filters.",fontSize=11.sp,color=Muted,modifier=Modifier.padding(top=4.dp))
+            }else LazyColumn(contentPadding=PaddingValues(horizontal=18.dp,vertical=7.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
                 items(shown,key={it.id}){t->
-                    var dx by remember{mutableFloatStateOf(0f)}
-                    val density = androidx.compose.ui.platform.LocalDensity.current
-                    val swipeOffset by animateDpAsState(with(density) { dx.toDp() }, animationSpec=spring(dampingRatio=0.72f, stiffness=420f), label="swipe-row")
-                    Row(Modifier.fillMaxWidth().offset(x=swipeOffset).clip(RoundedCornerShape(14.dp)).glass(RoundedCornerShape(14.dp)).pointerInput(t.id){detectHorizontalDragGestures(onHorizontalDrag={_,d->dx=(dx+d).coerceIn(-92f,92f)},onDragEnd={if(dx < -55){haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);pending=t}else if(dx>55){haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);onEdit(t)};dx=0f})}.clickable{haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);onEdit(t)}.padding(13.dp),verticalAlignment=Alignment.CenterVertically){
-                        Column(Modifier.weight(1f)){Text(cats.find{it.id==t.categoryId}?.name?:"Entry",fontSize=13.sp,fontWeight=FontWeight.Medium);Text(t.note.ifBlank{"Tap to edit"},fontSize=10.sp,color=Muted)}
-                        Text((if(t.type=="INCOME")"+" else "−")+cash(t.amountPaise),fontSize=13.sp,fontWeight=FontWeight.SemiBold)
+                    var dx by remember(t.id){mutableFloatStateOf(0f)}
+                    val density=androidx.compose.ui.platform.LocalDensity.current
+                    val swipeOffset by animateDpAsState(with(density){dx.toDp()},animationSpec=spring(dampingRatio=.76f,stiffness=420f),label="history-swipe")
+                    val currentDate=Instant.ofEpochMilli(t.timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+                    val previousDate=shown.getOrNull(shown.indexOf(t)-1)?.timestamp?.let{Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()}
+                    Column(Modifier.fillMaxWidth()){
+                        if(currentDate!=previousDate)Text(currentDate.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy")),fontSize=10.sp,color=Muted,fontWeight=FontWeight.SemiBold,modifier=Modifier.padding(start=5.dp,top=7.dp,bottom=3.dp))
+                        val category=cats.find{it.id==t.categoryId}
+                        Row(Modifier.fillMaxWidth().offset(x=swipeOffset).clip(RoundedCornerShape(17.dp)).glass(RoundedCornerShape(17.dp)).pointerInput(t.id){detectHorizontalDragGestures(onHorizontalDrag={_,d->dx=(dx+d).coerceIn(-92f,92f)},onDragEnd={if(dx < -55){haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);pending=t}else if(dx>55){haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);onEdit(t)};dx=0f})}.clickable{haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);onEdit(t)}.padding(13.dp),verticalAlignment=Alignment.CenterVertically){
+                            Box(Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(Color(category?.color?:0xFF548B69).copy(alpha=.17f)),contentAlignment=Alignment.Center){Icon(categoryGlyph(category?.icon),null,tint=Color(category?.color?:0xFF9EDDB7),modifier=Modifier.size(19.dp))}
+                            Column(Modifier.weight(1f).padding(start=11.dp),verticalArrangement=Arrangement.spacedBy(3.dp)){
+                                Text(category?.name?:"Uncategorised",fontSize=13.sp,fontWeight=FontWeight.SemiBold)
+                                if(t.note.isNotBlank())Text(t.note,fontSize=11.sp,color=Muted,maxLines=2,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                Text(Instant.ofEpochMilli(t.timestamp).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("h:mm a")),fontSize=9.sp,color=Muted.copy(alpha=.8f))
+                            }
+                            Column(horizontalAlignment=Alignment.End){Text((if(t.type=="INCOME")"+" else "−")+cash(t.amountPaise),fontSize=13.sp,fontWeight=FontWeight.SemiBold,color=if(t.type=="INCOME")Mint else TextPrimary);Text(if(t.type=="INCOME")"INCOME" else "EXPENSE",fontSize=8.sp,color=Muted,letterSpacing=.6.sp)}
+                        }
                     }
                 }
             }
         }
         SnackbarHost(snackbar,Modifier.align(Alignment.BottomCenter))
     }
-    datePickerTarget?.let { target ->
-        val current = if(target=="from") fromDate else toDate
-        val pickerState = rememberDatePickerState(initialSelectedDateMillis=(current?:LocalDate.now()).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
+    datePickerTarget?.let{target->
+        val current=if(target=="from")fromDate else toDate
+        val pickerState=rememberDatePickerState(initialSelectedDateMillis=(current?:LocalDate.now()).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
         DatePickerDialog(colors=DatePickerDefaults.colors(containerColor=NightSurface),onDismissRequest={datePickerTarget=null},confirmButton={TextButton(onClick={pickerState.selectedDateMillis?.let{millis->val picked=Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate();if(target=="from")fromDate=picked else toDate=picked};datePickerTarget=null}){Text("Apply")}},dismissButton={TextButton(onClick={datePickerTarget=null}){Text("Cancel")}}){DatePicker(state=pickerState)}
     }
-    pending?.let{t->AlertDialog(containerColor=NightSurface,tonalElevation=0.dp,onDismissRequest={pending=null},title={Text("Delete entry?")},text={Text("This transaction will be removed.")},confirmButton={TextButton(onClick={onDelete(t);deleted=t;pending=null}){Text("Delete")}},dismissButton={TextButton(onClick={pending=null}){Text("Cancel")}})}
+    pending?.let{t->AlertDialog(containerColor=NightSurface,tonalElevation=0.dp,onDismissRequest={pending=null},title={Text("Delete transaction?")},text={Text("This transaction will be removed from your history.")},confirmButton={TextButton(onClick={onDelete(t);deleted=t;pending=null}){Text("Delete")}},dismissButton={TextButton(onClick={pending=null}){Text("Cancel")}})}
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable private fun EntryDialog(existing:RuvoTransaction?,cats:List<RuvoCategory>,lastExpenseCategory:Long,lastIncomeCategory:Long,onDismiss:()->Unit,onSave:(RuvoTransaction)->Unit,onAddCategory:()->Unit){
     var amount by remember(existing){mutableStateOf(if(existing==null)"" else BigDecimal.valueOf(existing.amountPaise,2).stripTrailingZeros().toPlainString())}
@@ -488,7 +528,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                 FilterChip(selected=selected,onClick={category=c.id},label={Text(c.name,fontSize=11.sp,maxLines=1)},leadingIcon={if(selected)Icon(Icons.Default.Check,null,Modifier.size(14.dp))},colors=FilterChipDefaults.filterChipColors(selectedContainerColor=Mint,selectedLabelColor=Color(0xFF082016),selectedLeadingIconColor=Color(0xFF082016),containerColor=NightElevated,labelColor=Color(0xFFD1DDD5),iconColor=Muted))
             }}}
             TextButton(onClick=onAddCategory,contentPadding=PaddingValues(horizontal=8.dp,vertical=2.dp)){Icon(Icons.Default.Add,null,Modifier.size(16.dp));Spacer(Modifier.width(5.dp));Text("New category",fontSize=12.sp)}
-            OutlinedTextField(note,{note=it},label={Text("Note (optional)")},singleLine=true,modifier=Modifier.fillMaxWidth(),colors=OutlinedTextFieldDefaults.colors(focusedBorderColor=Mint,unfocusedBorderColor=Color(0xFF46594E),focusedLabelColor=Mint,focusedTextColor=TextPrimary,unfocusedTextColor=TextPrimary,cursorColor=Mint))
+            OutlinedTextField(note,{note=it.take(240)},label={Text("Note (optional)")},minLines=2,maxLines=4,modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(15.dp),colors=OutlinedTextFieldDefaults.colors(focusedBorderColor=Mint,unfocusedBorderColor=Color(0xFF46594E),focusedLabelColor=Mint,focusedTextColor=TextPrimary,unfocusedTextColor=TextPrimary,cursorColor=Mint))
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
                 TextButton(onClick={showDatePicker=true}){Icon(Icons.Default.CalendarToday,null,Modifier.size(16.dp));Spacer(Modifier.width(6.dp));Text(Instant.ofEpochMilli(date).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("d MMM yyyy")),fontSize=12.sp)}
                 Button(onClick={val paise=parsePaise(amount);if(paise!=null&&category!=0L)onSave(RuvoTransaction(id=existing?.id?:0,amountPaise=paise,categoryId=category,note=note.trim(),timestamp=date,type=type))},enabled=parsePaise(amount)!=null&&category!=0L,shape=RoundedCornerShape(14.dp),colors=ButtonDefaults.buttonColors(containerColor=Mint,contentColor=Color(0xFF082016))){Text(if(existing==null)"Save entry" else "Save changes",fontWeight=FontWeight.SemiBold)}
