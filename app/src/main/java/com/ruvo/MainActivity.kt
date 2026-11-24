@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -59,6 +60,17 @@ private fun Modifier.glass(shape: RoundedCornerShape = RoundedCornerShape(22.dp)
         .clip(shape)
         .background(Brush.verticalGradient(listOf(surface.copy(alpha = 0.94f), surface.copy(alpha = 0.78f))))
         .border(1.dp, Color.White.copy(alpha = if (MaterialTheme.colorScheme.background == Ivory) 0.72f else 0.10f), shape)
+}
+
+private fun categoryGlyph(name: String?): ImageVector = when(name) {
+    "restaurant" -> Icons.Default.Restaurant
+    "directions_bus" -> Icons.Default.DirectionsBus
+    "shopping_bag" -> Icons.Default.ShoppingBag
+    "school" -> Icons.Default.School
+    "coffee" -> Icons.Default.Coffee
+    "receipt" -> Icons.Default.ReceiptLong
+    "payments" -> Icons.Default.Payments
+    else -> Icons.Default.Category
 }
 
 private fun pinDigest(pin:String)=MessageDigest.getInstance("SHA-256").digest(pin.toByteArray()).joinToString("") { "%02x".format(it) }
@@ -212,7 +224,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
 @Composable private fun Empty(s:String){Text(s,color=Muted,fontSize=12.sp,modifier=Modifier.fillMaxWidth().padding(vertical=22.dp),textAlign=androidx.compose.ui.text.style.TextAlign.Center)}
 @Composable private fun TransactionLine(t:RuvoTransaction,cats:List<RuvoCategory>,onClick:()->Unit){
     Row(Modifier.fillMaxWidth().clickable{onClick()}.padding(vertical=12.dp),verticalAlignment=Alignment.CenterVertically){
-        Box(Modifier.size(36.dp).clip(CircleShape).background(Color(0xFFE8EEE5)),contentAlignment=Alignment.Center){Icon(Icons.Default.Receipt,null,tint=Forest,modifier=Modifier.size(18.dp))}
+        Box(Modifier.size(38.dp).clip(CircleShape).background(Color(0xFFE8EEE5)),contentAlignment=Alignment.Center){Icon(categoryGlyph(cats.find{it.id==t.categoryId}?.icon),null,tint=Forest,modifier=Modifier.size(19.dp))}
         Column(Modifier.weight(1f).padding(start=10.dp)){Text(cats.find{it.id==t.categoryId}?.name?:"Entry",fontSize=13.sp,fontWeight=FontWeight.Medium);Text(t.note.ifBlank{Instant.ofEpochMilli(t.timestamp).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("d MMM"))},fontSize=10.sp,color=Muted)}
         Text((if(t.type=="INCOME")"+" else "−")+cash(t.amountPaise),fontSize=13.sp,fontWeight=FontWeight.SemiBold,color=if(t.type=="INCOME")Forest else MaterialTheme.colorScheme.onSurface)
     }
@@ -325,6 +337,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     var confirmDelete by remember(existing){mutableStateOf(false)}
     var name by remember(existing){mutableStateOf(existing?.name?:"")}
     var income by remember(existing){mutableStateOf(existing?.isIncome?:false)}
+    var icon by remember(existing){mutableStateOf(existing?.icon?:"category")}
     val palette=listOf(0xFF548B69,0xFFE3A35C,0xFF6F9DB8,0xFFB18AB8,0xFFC78C69,0xFF8A91A8)
     var color by remember(existing){mutableLongStateOf(existing?.color?:palette[0])}
     AlertDialog(onDismissRequest=onDismiss,title={Text(if(existing==null)"New category" else "Edit category")},text={
@@ -335,9 +348,12 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             } else {
                 Text(if(income) "Income category" else "Expense category",fontSize=12.sp,color=Muted)
             }
+            Text("ICON",fontSize=10.sp,color=Muted,fontWeight=FontWeight.SemiBold)
+            Row(horizontalArrangement=Arrangement.spacedBy(5.dp)) { listOf("category","restaurant","directions_bus","shopping_bag","school","coffee","receipt","payments").forEach { key -> FilterChip(selected=icon==key,onClick={icon=key},label={Icon(categoryGlyph(key),null,modifier=Modifier.size(16.dp))}) } }
+            Text("COLOUR",fontSize=10.sp,color=Muted,fontWeight=FontWeight.SemiBold)
             Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){palette.forEach{c->Box(Modifier.size(27.dp).clip(CircleShape).background(Color(c)).clickable{color=c},contentAlignment=Alignment.Center){if(c==color)Icon(Icons.Default.Check,null,tint=Color.White)}}}
         }
-    },confirmButton={TextButton(onClick={if(name.isNotBlank())onSave(RuvoCategory(id=existing?.id?:0L,name=name.trim(),icon=existing?.icon?:"category",color=color,isIncome=income))}){Text(if(existing==null)"Create" else "Save")}},dismissButton={Row(verticalAlignment=Alignment.CenterVertically){if(existing!=null)TextButton(onClick={confirmDelete=true}){Text("Delete",color=Color(0xFFB45E52))};TextButton(onClick=onDismiss){Text("Cancel")}}})
+    },confirmButton={TextButton(onClick={if(name.isNotBlank())onSave(RuvoCategory(id=existing?.id?:0L,name=name.trim(),icon=icon,color=color,isIncome=income))}){Text(if(existing==null)"Create" else "Save")}},dismissButton={Row(verticalAlignment=Alignment.CenterVertically){if(existing!=null)TextButton(onClick={confirmDelete=true}){Text("Delete",color=Color(0xFFB45E52))};TextButton(onClick=onDismiss){Text("Cancel")}}})
     if(confirmDelete && existing!=null) AlertDialog(onDismissRequest={confirmDelete=false},title={Text("Delete category?")},text={Text("Existing transactions will be moved to another category of the same type.")},confirmButton={TextButton(onClick={onDelete(existing)}){Text("Delete")}},dismissButton={TextButton(onClick={confirmDelete=false}){Text("Cancel")}})
 }
 
