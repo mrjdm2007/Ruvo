@@ -72,7 +72,7 @@ class RuvoWidgetProvider : AppWidgetProvider() {
             val formatter = java.text.NumberFormat.getCurrencyInstance(Locale("en", "IN"))
             formatter.maximumFractionDigits = 2
             formatter.minimumFractionDigits = if (paise % 100L == 0L) 0 else 2
-            return formatter.format(paise / 100.0)
+            return formatter.format(java.math.BigDecimal.valueOf(paise, 2))
         }
     }
 
