@@ -266,8 +266,10 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     },confirmButton={TextButton(onClick={val v=amount.toDoubleOrNull()?:0.0;if(v>0&&category!=0L)onSave(RuvoTransaction(id=existing?.id?:0,amountPaise=(v*100).toLong(),categoryId=category,note=note.trim(),timestamp=date,type=type))}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
 }
 
-@Composable private fun CategoryDialog(onDismiss:()->Unit,onSave:(String,String,Long,Boolean)->Unit){
-    var name by remember{mutableStateOf("")};var income by remember{mutableStateOf(false)}
+@Composable private fun CategoryDialog(existing:RuvoCategory?,onDismiss:()->Unit,onSave:(RuvoCategory)->Unit,onDelete:(RuvoCategory)->Unit){
+    var confirmDelete by remember(existing){mutableStateOf(false)}
+    var name by remember(existing){mutableStateOf(existing?.name?:"")}
+    var income by remember(existing){mutableStateOf(existing?.isIncome?:false)}
     val palette=listOf(0xFF548B69,0xFFE3A35C,0xFF6F9DB8,0xFFB18AB8,0xFFC78C69,0xFF8A91A8)
     var color by remember(existing){mutableLongStateOf(existing?.color?:palette[0])}
     AlertDialog(onDismissRequest=onDismiss,title={Text(if(existing==null)"New category" else "Edit category")},text={
@@ -276,8 +278,10 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             Row{FilterChip(selected=!income,onClick={income=false},label={Text("Expense")});Spacer(Modifier.width(8.dp));FilterChip(selected=income,onClick={income=true},label={Text("Income")})}
             Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){palette.forEach{c->Box(Modifier.size(27.dp).clip(CircleShape).background(Color(c)).clickable{color=c},contentAlignment=Alignment.Center){if(c==color)Icon(Icons.Default.Check,null,tint=Color.White)}}}
         }
-    },confirmButton={TextButton(onClick={if(name.isNotBlank()) onSave(RuvoCategory(id=existing?.id?:0L,name=name.trim(),icon=existing?.icon?:"category",color=color,isIncome=income))}){Text(if(existing==null)"Create" else "Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
+    },confirmButton={TextButton(onClick={if(name.isNotBlank())onSave(RuvoCategory(id=existing?.id?:0L,name=name.trim(),icon=existing?.icon?:"category",color=color,isIncome=income))}){Text(if(existing==null)"Create" else "Save")}},dismissButton={Row(verticalAlignment=Alignment.CenterVertically){if(existing!=null)TextButton(onClick={confirmDelete=true}){Text("Delete",color=Color(0xFFB45E52))};TextButton(onClick=onDismiss){Text("Cancel")}}})
+    if(confirmDelete && existing!=null) AlertDialog(onDismissRequest={confirmDelete=false},title={Text("Delete category?")},text={Text("Existing transactions will be moved to another category of the same type.")},confirmButton={TextButton(onClick={onDelete(existing)}){Text("Delete")}},dismissButton={TextButton(onClick={confirmDelete=false}){Text("Cancel")}})
 }
+
 @Composable private fun BudgetDialog(current:String,onSave:(String)->Unit,onDismiss:()->Unit){
     var value by remember{mutableStateOf(current)}
     AlertDialog(onDismissRequest=onDismiss,title={Text("Monthly budget")},text={OutlinedTextField(value,{value=it},label={Text("Budget in ₹")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number))},confirmButton={TextButton(onClick={onSave(value)}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
