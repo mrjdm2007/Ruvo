@@ -300,7 +300,11 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     AlertDialog(onDismissRequest=onDismiss,title={Text(if(existing==null)"New category" else "Edit category")},text={
         Column(verticalArrangement=Arrangement.spacedBy(10.dp)){
             OutlinedTextField(name,{name=it},label={Text("Category name")},singleLine=true)
-            Row{FilterChip(selected=!income,onClick={income=false},label={Text("Expense")});Spacer(Modifier.width(8.dp));FilterChip(selected=income,onClick={income=true},label={Text("Income")})}
+            if(existing==null) {
+                Row{FilterChip(selected=!income,onClick={income=false},label={Text("Expense")});Spacer(Modifier.width(8.dp));FilterChip(selected=income,onClick={income=true},label={Text("Income")})}
+            } else {
+                Text(if(income) "Income category" else "Expense category",fontSize=12.sp,color=Muted)
+            }
             Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){palette.forEach{c->Box(Modifier.size(27.dp).clip(CircleShape).background(Color(c)).clickable{color=c},contentAlignment=Alignment.Center){if(c==color)Icon(Icons.Default.Check,null,tint=Color.White)}}}
         }
     },confirmButton={TextButton(onClick={if(name.isNotBlank())onSave(RuvoCategory(id=existing?.id?:0L,name=name.trim(),icon=existing?.icon?:"category",color=color,isIncome=income))}){Text(if(existing==null)"Create" else "Save")}},dismissButton={Row(verticalAlignment=Alignment.CenterVertically){if(existing!=null)TextButton(onClick={confirmDelete=true}){Text("Delete",color=Color(0xFFB45E52))};TextButton(onClick=onDismiss){Text("Cancel")}}})
