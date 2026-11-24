@@ -444,7 +444,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         val pickerState = rememberDatePickerState(initialSelectedDateMillis=(current?:LocalDate.now()).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
         DatePickerDialog(colors=DatePickerDefaults.colors(containerColor=NightSurface),onDismissRequest={datePickerTarget=null},confirmButton={TextButton(onClick={pickerState.selectedDateMillis?.let{millis->val picked=Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate();if(target=="from")fromDate=picked else toDate=picked};datePickerTarget=null}){Text("Apply")}},dismissButton={TextButton(onClick={datePickerTarget=null}){Text("Cancel")}}){DatePicker(state=pickerState)}
     }
-    pending?.let{t->AlertDialog(onDismissRequest={pending=null},title={Text("Delete entry?")},text={Text("This transaction will be removed.")},confirmButton={TextButton(onClick={onDelete(t);deleted=t;pending=null}){Text("Delete")}},dismissButton={TextButton(onClick={pending=null}){Text("Cancel")}})}
+    pending?.let{t->AlertDialog(containerColor=NightSurface,tonalElevation=0.dp,onDismissRequest={pending=null},title={Text("Delete entry?")},text={Text("This transaction will be removed.")},confirmButton={TextButton(onClick={onDelete(t);deleted=t;pending=null}){Text("Delete")}},dismissButton={TextButton(onClick={pending=null}){Text("Cancel")}})}
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -497,7 +497,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     }
     if(showDatePicker){
         val picker=rememberDatePickerState(initialSelectedDateMillis=Instant.ofEpochMilli(date).atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
-        DatePickerDialog(onDismissRequest={showDatePicker=false},confirmButton={TextButton(onClick={picker.selectedDateMillis?.let{date=Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()};showDatePicker=false}){Text("Select")}},dismissButton={TextButton(onClick={showDatePicker=false}){Text("Cancel")}}){DatePicker(state=picker)}
+        DatePickerDialog(colors=DatePickerDefaults.colors(containerColor=NightSurface),onDismissRequest={showDatePicker=false},confirmButton={TextButton(onClick={picker.selectedDateMillis?.let{date=Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()};showDatePicker=false}){Text("Select")}},dismissButton={TextButton(onClick={showDatePicker=false}){Text("Cancel")}}){DatePicker(state=picker)}
     }
 }
 @Composable private fun CategoryDialog(existing:RuvoCategory?,onDismiss:()->Unit,onSave:(RuvoCategory)->Unit,onDelete:(RuvoCategory)->Unit){
@@ -507,7 +507,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     var icon by remember(existing){mutableStateOf(existing?.icon?:"category")}
     val palette=listOf(0xFF548B69,0xFFE3A35C,0xFF6F9DB8,0xFFB18AB8,0xFFC78C69,0xFF8A91A8)
     var color by remember(existing){mutableLongStateOf(existing?.color?:palette[0])}
-    AlertDialog(onDismissRequest=onDismiss,title={Text(if(existing==null)"New category" else "Edit category")},text={
+    AlertDialog(containerColor=NightSurface,tonalElevation=0.dp,onDismissRequest=onDismiss,title={Text(if(existing==null)"New category" else "Edit category")},text={
         Column(verticalArrangement=Arrangement.spacedBy(10.dp)){
             OutlinedTextField(name,{name=it},label={Text("Category name")},singleLine=true)
             if(existing==null) {
@@ -521,19 +521,19 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){palette.forEach{c->Box(Modifier.size(27.dp).clip(CircleShape).background(Color(c)).clickable{color=c},contentAlignment=Alignment.Center){if(c==color)Icon(Icons.Default.Check,null,tint=Color.White)}}}
         }
     },confirmButton={TextButton(onClick={if(name.isNotBlank())onSave(RuvoCategory(id=existing?.id?:0L,name=name.trim(),icon=icon,color=color,isIncome=income))}){Text(if(existing==null)"Create" else "Save")}},dismissButton={Row(verticalAlignment=Alignment.CenterVertically){if(existing!=null)TextButton(onClick={confirmDelete=true}){Text("Delete",color=Color(0xFFFF9B91))};TextButton(onClick=onDismiss){Text("Cancel")}}})
-    if(confirmDelete && existing!=null) AlertDialog(onDismissRequest={confirmDelete=false},title={Text("Delete category?")},text={Text("Existing transactions will be moved to another category of the same type.")},confirmButton={TextButton(onClick={onDelete(existing)}){Text("Delete")}},dismissButton={TextButton(onClick={confirmDelete=false}){Text("Cancel")}})
+    if(confirmDelete && existing!=null) AlertDialog(containerColor=NightSurface,tonalElevation=0.dp,onDismissRequest={confirmDelete=false},title={Text("Delete category?")},text={Text("Existing transactions will be moved to another category of the same type.")},confirmButton={TextButton(onClick={onDelete(existing)}){Text("Delete")}},dismissButton={TextButton(onClick={confirmDelete=false}){Text("Cancel")}})
 }
 
 @Composable private fun PinSetupDialog(onDismiss:()->Unit,onSave:(String)->Unit){
     var first by remember{mutableStateOf("")}
     var second by remember{mutableStateOf("")}
     var error by remember{mutableStateOf(false)}
-    AlertDialog(onDismissRequest=onDismiss,title={Text("Set app PIN")},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){Text("Choose a 4–6 digit PIN. It stays on this device.",fontSize=12.sp,color=Muted);OutlinedTextField(first,{first=it.filter(Char::isDigit).take(6)},label={Text("New PIN")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),singleLine=true);OutlinedTextField(second,{second=it.filter(Char::isDigit).take(6)},label={Text("Confirm PIN")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),singleLine=true);if(error)Text("PINs must match and contain 4–6 digits.",color=Color(0xFFFF9B91),fontSize=11.sp)}},confirmButton={TextButton(onClick={if(first.length in 4..6 && first==second)onSave(first) else error=true}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
+    AlertDialog(containerColor=NightSurface,tonalElevation=0.dp,onDismissRequest=onDismiss,title={Text("Set app PIN")},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){Text("Choose a 4–6 digit PIN. It stays on this device.",fontSize=12.sp,color=Muted);OutlinedTextField(first,{first=it.filter(Char::isDigit).take(6)},label={Text("New PIN")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),singleLine=true);OutlinedTextField(second,{second=it.filter(Char::isDigit).take(6)},label={Text("Confirm PIN")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),singleLine=true);if(error)Text("PINs must match and contain 4–6 digits.",color=Color(0xFFFF9B91),fontSize=11.sp)}},confirmButton={TextButton(onClick={if(first.length in 4..6 && first==second)onSave(first) else error=true}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
 }
 @Composable private fun BudgetDialog(current:String,onSave:(String)->Unit,onDismiss:()->Unit){
     var value by remember{mutableStateOf(current)}
     var error by remember{mutableStateOf(false)}
-    AlertDialog(onDismissRequest=onDismiss,title={Text("Monthly budget")},text={Column(verticalArrangement=Arrangement.spacedBy(6.dp)){OutlinedTextField(value,{value=it;error=false},label={Text("Budget in ₹")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),isError=error,singleLine=true);if(error)Text("Enter a valid positive amount.",color=Color(0xFFFF9B91),fontSize=11.sp)}},confirmButton={TextButton(onClick={if(parsePaise(value)!=null)onSave(value) else error=true}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
+    AlertDialog(containerColor=NightSurface,tonalElevation=0.dp,onDismissRequest=onDismiss,title={Text("Monthly budget")},text={Column(verticalArrangement=Arrangement.spacedBy(6.dp)){OutlinedTextField(value,{value=it;error=false},label={Text("Budget in ₹")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),isError=error,singleLine=true);if(error)Text("Enter a valid positive amount.",color=Color(0xFFFF9B91),fontSize=11.sp)}},confirmButton={TextButton(onClick={if(parsePaise(value)!=null)onSave(value) else error=true}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
 }
 @Composable private fun More(cats:List<RuvoCategory>,onAdd:()->Unit,onBudget:()->Unit,budget:String,onEditCategory:(RuvoCategory)->Unit,pinEnabled:Boolean,onSetPin:()->Unit,onDisablePin:()->Unit){
     val context=androidx.compose.ui.platform.LocalContext.current
@@ -553,7 +553,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         item{Row(Modifier.fillMaxWidth().padding(horizontal=22.dp,vertical=15.dp),horizontalArrangement=Arrangement.SpaceBetween){Column{Text("Your categories",fontSize=17.sp,fontWeight=FontWeight.SemiBold);Text("Personalise your spending",fontSize=11.sp,color=Muted)};TextButton(onClick=onAdd){Text("Add")}}}
         items(orderedCats,key={it.id}){c->
             val index=orderedCats.indexOfFirst{it.id==c.id}
-            Row(Modifier.fillMaxWidth().padding(horizontal=18.dp,vertical=5.dp),verticalAlignment=Alignment.CenterVertically){
+            Row(Modifier.fillMaxWidth().padding(horizontal=18.dp,vertical=5.dp).glass(RoundedCornerShape(18.dp)).padding(horizontal=8.dp,vertical=2.dp),verticalAlignment=Alignment.CenterVertically){
                 Row(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable{onEditCategory(c)}.padding(vertical=8.dp),verticalAlignment=Alignment.CenterVertically){
                     Box(Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(Color(c.color).copy(alpha=.16f)),contentAlignment=Alignment.Center){Icon(categoryGlyph(c.icon),null,tint=Color(c.color),modifier=Modifier.size(18.dp))}
                     Column(Modifier.weight(1f).padding(start=10.dp)){Text(c.name,fontSize=13.sp);Text(if(c.isIncome)"Income" else "Expense",fontSize=10.sp,color=Muted)}
