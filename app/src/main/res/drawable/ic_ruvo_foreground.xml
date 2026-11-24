@@ -3,10 +3,27 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Soft inset tile gives the mark a deliberate app-icon silhouette. -->
+    <path
+        android:fillColor="#1B3025"
+        android:strokeColor="#456B53"
+        android:strokeWidth="1.5"
+        android:pathData="M30,13 H78 C87,13 95,21 95,30 V78 C95,87 87,95 78,95 H30 C21,95 13,87 13,78 V30 C13,21 21,13 30,13 Z"/>
+
+    <!-- A crisp, custom geometric R monogram. -->
     <path
         android:fillColor="#BDE9D0"
-        android:pathData="M31,22 H57 C74,22 84,32 84,47 C84,59 77,67 65,70 L84,88 H64 L47,70 V88 H31 Z"/>
+        android:pathData="M34,27 H57 C72,27 81,35 81,48 C81,58 75,65 65,68 L82,83 H65 L48,67 V83 H34 Z"/>
+
+    <!-- Inner counter and cut-out keep the letter legible at launcher size. -->
     <path
-        android:fillColor="#101B15"
-        android:pathData="M47,37 V55 H57 C65,55 69,52 69,46 C69,40 65,37 57,37 Z"/>
+        android:fillColor="#1B3025"
+        android:pathData="M48,39 V55 H57 C64,55 68,52 68,47 C68,42 64,39 57,39 Z"/>
+
+    <!-- Small restrained highlight, not a decorative crystal effect. -->
+    <path
+        android:fillColor="#E9FFF1"
+        android:fillAlpha="0.72"
+        android:pathData="M34,27 H57 C63,27 68,29 73,33 C68,31 63,30 57,30 H37 V45 H34 Z"/>
 </vector>
