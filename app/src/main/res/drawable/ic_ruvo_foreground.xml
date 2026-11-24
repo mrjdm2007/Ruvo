@@ -4,26 +4,38 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Soft inset tile gives the mark a deliberate app-icon silhouette. -->
-    <path
-        android:fillColor="#1B3025"
-        android:strokeColor="#456B53"
-        android:strokeWidth="1.5"
-        android:pathData="M30,13 H78 C87,13 95,21 95,30 V78 C95,87 87,95 78,95 H30 C21,95 13,87 13,78 V30 C13,21 21,13 30,13 Z"/>
+    <!-- Recessed tile with a soft lower-right shadow for depth. -->
+    <path android:fillColor="#080F0B"
+        android:pathData="M30,15 H78 C88,15 96,23 96,33 V79 C96,89 88,97 78,97 H30 C20,97 12,89 12,79 V33 C12,23 20,15 30,15 Z"/>
+    <path android:fillColor="#1B3025"
+        android:strokeColor="#527A60" android:strokeWidth="1.5"
+        android:pathData="M30,11 H78 C88,11 96,19 96,29 V75 C96,85 88,93 78,93 H30 C20,93 12,85 12,75 V29 C12,19 20,11 30,11 Z"/>
+    <path android:fillColor="#31543F"
+        android:pathData="M30,13 H78 C86,13 93,20 93,28 V31 C90,23 85,19 77,19 H31 C23,19 17,25 15,32 V29 C15,20 21,13 30,13 Z"/>
 
-    <!-- A crisp, custom geometric R monogram. -->
-    <path
-        android:fillColor="#BDE9D0"
-        android:pathData="M34,27 H57 C72,27 81,35 81,48 C81,58 75,65 65,68 L82,83 H65 L48,67 V83 H34 Z"/>
+    <!-- Wallet body: layered base, front face and subtle lower edge. -->
+    <path android:fillColor="#6C9E7C"
+        android:pathData="M27,38 C27,33 31,29 36,29 H70 C75,29 79,33 79,38 V75 C79,80 75,84 70,84 H36 C31,84 27,80 27,75 Z"/>
+    <path android:fillColor="#BDE9D0"
+        android:pathData="M25,36 C25,32 29,28 34,28 H68 C73,28 77,32 77,37 V72 C77,77 73,81 68,81 H34 C29,81 25,77 25,72 Z"/>
+    <path android:fillColor="#A4D8B8"
+        android:pathData="M28,67 H74 V72 C74,76 71,78 67,78 H35 C31,78 28,75 28,71 Z"/>
 
-    <!-- Inner counter and cut-out keep the letter legible at launcher size. -->
-    <path
-        android:fillColor="#1B3025"
-        android:pathData="M48,39 V55 H57 C64,55 68,52 68,47 C68,42 64,39 57,39 Z"/>
+    <!-- Folded wallet flap and clasp make the finance/wallet meaning clear. -->
+    <path android:fillColor="#244632"
+        android:pathData="M25,43 H69 C75,43 80,48 80,54 V65 C80,70 76,74 71,74 H25 Z"/>
+    <path android:fillColor="#D8F5E3"
+        android:pathData="M25,40 H68 C75,40 81,46 81,53 V63 C81,69 76,73 70,73 H25 Z"/>
+    <path android:fillColor="#8FC6A3"
+        android:pathData="M29,44 H68 C73,44 77,48 77,53 V61 C77,66 73,69 68,69 H29 Z"/>
+    <path android:fillColor="#1B3025"
+        android:pathData="M64,49 H82 C85,49 87,52 87,56 V61 C87,65 85,68 82,68 H64 C60,68 57,65 57,61 V56 C57,52 60,49 64,49 Z"/>
+    <path android:fillColor="#BDE9D0"
+        android:pathData="M69,53 C72,53 74,55 74,58 C74,61 72,63 69,63 C66,63 64,61 64,58 C64,55 66,53 69,53 Z"/>
+    <path android:fillColor="#31543F"
+        android:pathData="M69,55 C71,55 72,56 72,58 C72,60 71,61 69,61 C67,61 66,60 66,58 C66,56 67,55 69,55 Z"/>
 
-    <!-- Small restrained highlight, not a decorative crystal effect. -->
-    <path
-        android:fillColor="#E9FFF1"
-        android:fillAlpha="0.72"
-        android:pathData="M34,27 H57 C63,27 68,29 73,33 C68,31 63,30 57,30 H37 V45 H34 Z"/>
+    <!-- Fine highlight along the upper fold; restrained, not glossy. -->
+    <path android:fillColor="#F0FFF5" android:fillAlpha="0.58"
+        android:pathData="M34,31 H67 C70,31 72,32 74,34 C71,33 69,33 66,33 H35 C32,33 30,35 29,37 C29,33 31,31 34,31 Z"/>
 </vector>
