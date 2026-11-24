@@ -369,6 +369,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable private fun History(rows:List<RuvoTransaction>,cats:List<RuvoCategory>,query:String,onQuery:(String)->Unit,onEdit:(RuvoTransaction)->Unit,onDelete:(RuvoTransaction)->Unit,onRestore:(RuvoTransaction)->Unit){
     val snackbar = remember { SnackbarHostState() }
     val haptic = LocalHapticFeedback.current
