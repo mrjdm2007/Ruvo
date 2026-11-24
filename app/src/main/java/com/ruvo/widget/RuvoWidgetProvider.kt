@@ -16,6 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 class RuvoWidgetProvider : AppWidgetProvider() {
@@ -46,6 +47,8 @@ class RuvoWidgetProvider : AppWidgetProvider() {
                 ids.forEach { id ->
                     val views = RemoteViews(context.packageName, R.layout.widget_ruvo)
                     views.setTextViewText(R.id.widget_amount, amount)
+                    views.setTextViewText(R.id.widget_today, today.format(DateTimeFormatter.ofPattern("EEEE · d MMM", Locale.ENGLISH)))
+                    views.setContentDescription(R.id.widget_root, "RUVO. Today’s spending is $amount")
                     val open = Intent(context, MainActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     }
