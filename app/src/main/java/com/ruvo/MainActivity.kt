@@ -79,7 +79,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     var budget by remember { mutableStateOf(prefs.getString("monthly_budget", "15000") ?: "15000") }
     var dark by remember { mutableStateOf(prefs.getBoolean("dark_mode", false)) }
     var pinHash by remember { mutableStateOf(prefs.getString("app_pin_hash", null)) }
-    var locked by remember(pinHash) { mutableStateOf(pinHash != null) }
+    var locked by remember { mutableStateOf(pinHash != null) }
     var pinEntry by remember { mutableStateOf("") }
     var pinError by remember { mutableStateOf(false) }
     var pinSetup by remember { mutableStateOf(false) }
@@ -311,6 +311,10 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     AlertDialog(onDismissRequest=onDismiss,title={Text("Monthly budget")},text={OutlinedTextField(value,{value=it},label={Text("Budget in ₹")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number))},confirmButton={TextButton(onClick={onSave(value)}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
 }
 @Composable private fun More(cats:List<RuvoCategory>,dark:Boolean,onDark:(Boolean)->Unit,onAdd:()->Unit,onBudget:()->Unit,budget:String,onEditCategory:(RuvoCategory)->Unit,pinEnabled:Boolean,onSetPin:()->Unit){
+    val context=androidx.compose.ui.platform.LocalContext.current
+    val prefs=remember(context){context.getSharedPreferences("ruvo_preferences",0)}
+    var order by remember { mutableStateOf(prefs.getString("category_order","")?.split(",")?.mapNotNull{it.toLongOrNull()} ?: emptyList()) }
+    val orderedCats=cats.sortedBy { val index=order.indexOf(it.id); if(index<0) Int.MAX_VALUE else index }
     LazyColumn(contentPadding=PaddingValues(bottom=90.dp)){
         item{Heading("More","Make RUVO feel like yours.")}
         item{Column(Modifier.padding(horizontal=18.dp).clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).padding(16.dp)){
@@ -321,7 +325,18 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             Row(Modifier.fillMaxWidth().clickable{onBudget()}.padding(vertical=7.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("Monthly budget");Text("₹$budget",color=Forest)}
         }}
         item{Row(Modifier.fillMaxWidth().padding(horizontal=22.dp,vertical=15.dp),horizontalArrangement=Arrangement.SpaceBetween){Column{Text("Your categories",fontSize=17.sp,fontWeight=FontWeight.SemiBold);Text("Personalise your spending",fontSize=11.sp,color=Muted)};TextButton(onClick=onAdd){Text("Add")}}}
-        items(cats){c->Row(Modifier.fillMaxWidth().clickable{onEditCategory(c)}.padding(horizontal=22.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(11.dp).clip(CircleShape).background(Color(c.color)));Column(Modifier.weight(1f).padding(start=10.dp)){Text(c.name,fontSize=13.sp);Text(if(c.isIncome)"Income" else "Expense",fontSize=10.sp,color=Muted)};Icon(Icons.Default.Edit,null,tint=Muted,modifier=Modifier.size(16.dp))}}
+        items(orderedCats,key={it.id}){c->
+            val index=orderedCats.indexOfFirst{it.id==c.id}
+            Row(Modifier.fillMaxWidth().padding(horizontal=18.dp,vertical=5.dp),verticalAlignment=Alignment.CenterVertically){
+                Row(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable{onEditCategory(c)}.padding(vertical=8.dp),verticalAlignment=Alignment.CenterVertically){
+                    Box(Modifier.size(11.dp).clip(CircleShape).background(Color(c.color)))
+                    Column(Modifier.weight(1f).padding(start=10.dp)){Text(c.name,fontSize=13.sp);Text(if(c.isIncome)"Income" else "Expense",fontSize=10.sp,color=Muted)}
+                    Icon(Icons.Default.Edit,null,tint=Muted,modifier=Modifier.size(16.dp))
+                }
+                IconButton(onClick={if(index>0){val ids=orderedCats.map{it.id}.toMutableList();val tmp=ids[index-1];ids[index-1]=ids[index];ids[index]=tmp;order=ids;prefs.edit().putString("category_order",ids.joinToString(",")).apply()}},enabled=index>0){Icon(Icons.Default.KeyboardArrowUp,null)}
+                IconButton(onClick={if(index<orderedCats.lastIndex){val ids=orderedCats.map{it.id}.toMutableList();val tmp=ids[index+1];ids[index+1]=ids[index];ids[index]=tmp;order=ids;prefs.edit().putString("category_order",ids.joinToString(",")).apply()}},enabled=index<orderedCats.lastIndex){Icon(Icons.Default.KeyboardArrowDown,null)}
+            }
+        }
         item{Text("All information stays on this device. RUVO does not connect to the internet or send your data anywhere.",fontSize=11.sp,color=Muted,modifier=Modifier.padding(22.dp))}
     }
 }
