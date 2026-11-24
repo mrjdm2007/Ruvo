@@ -84,7 +84,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                     0 -> Home(rows,cats,budget.toLongOrNull()?.times(100)?:1500000L,onBudget={budgetDialog=true},onEdit={editing=it;dialog=true})
                     1 -> CalendarPage(rows,onEdit={editing=it;dialog=true})
                     2 -> History(rows,cats,search,{search=it},onEdit={editing=it;dialog=true},onDelete={vm.delete(it)})
-                    else -> More(cats,dark,{dark=it},{categoryDialog=true},{budgetDialog=true},budget)
+                    else -> More(cats,dark,{dark=it;prefs.edit().putBoolean("dark_mode",it).apply()},{categoryDialog=true},{budgetDialog=true},budget)
                 }
             }
         }
