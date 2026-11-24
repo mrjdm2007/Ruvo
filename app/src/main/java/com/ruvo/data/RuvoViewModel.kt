@@ -7,7 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.ruvo.widget.RuvoWidgetProvider
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.launch\nimport kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -41,7 +41,7 @@ class RuvoViewModel(app: Application) : AndroidViewModel(app) {
     fun addCategory(name: String, icon: String, color: Long, income: Boolean = false) = viewModelScope.launch {
         if (name.isNotBlank()) dao.insertCategory(RuvoCategory(name=name.trim(), icon=icon, color=color, isIncome=income))
     }
-    fun category(id: Long, callback: (RuvoCategory?) -> Unit) = viewModelScope.launch { callback(dao.category(id)) }
+    fun updateCategory(item: RuvoCategory) = viewModelScope.launch {\n        if (item.name.isNotBlank()) dao.updateCategory(item.copy(name = item.name.trim()))\n    }\n    fun deleteCategory(item: RuvoCategory) = viewModelScope.launch {\n        val fallback = dao.categories().first().firstOrNull { it.id != item.id && it.isIncome == item.isIncome }\n        if (fallback != null) {\n            dao.moveTransactionsToCategory(item.id, fallback.id)\n            dao.deleteCategory(item)\n        }\n    }\n    fun category(id: Long, callback: (RuvoCategory?) -> Unit) = viewModelScope.launch { callback(dao.category(id)) }
 
     private fun refreshWidget() {
         getApplication<Application>().sendBroadcast(Intent(getApplication(), RuvoWidgetProvider::class.java).setAction("com.ruvo.UPDATE_WIDGET"))
