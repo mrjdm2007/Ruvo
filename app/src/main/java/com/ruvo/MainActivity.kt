@@ -69,7 +69,7 @@ private fun Modifier.glass(shape: RoundedCornerShape = RoundedCornerShape(22.dp)
     return this
         .shadow(12.dp, shape, ambientColor = Forest.copy(alpha = 0.10f), spotColor = Forest.copy(alpha = 0.12f))
         .clip(shape)
-        .background(Brush.verticalGradient(listOf(surface.copy(alpha = 0.94f), surface.copy(alpha = 0.78f))))
+        .background(Brush.verticalGradient(listOf(surface.copy(alpha = 0.91f), surface.copy(alpha = 0.74f))))
         .border(1.dp, Color.White.copy(alpha = if (MaterialTheme.colorScheme.background == Ivory) 0.72f else 0.10f), shape)
 }
 
@@ -144,7 +144,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             FloatingActionButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.LongPress);editing=null;dialog=true},containerColor=Forest,contentColor=Color.White,shape=RoundedCornerShape(20.dp)){Icon(Icons.Default.Add,null)}
         }) { padding ->
             Box(Modifier.fillMaxSize().padding(padding)) {
-                AnimatedContent(targetState=page,transitionSpec={fadeIn(tween(220))+slideInHorizontally(initialOffsetX={it/24}) togetherWith fadeOut(tween(140))},label="page-transition") { activePage ->
+                AnimatedContent(targetState=page,transitionSpec={fadeIn(tween(220))+slideInHorizontally(animationSpec=spring(dampingRatio=0.86f,stiffness=380f),initialOffsetX={it/24}) togetherWith fadeOut(tween(140))},label="page-transition") { activePage ->
                     when(activePage) {
                         0 -> Home(rows,cats,parsePaise(budget)?:1500000L,onBudget={budgetDialog=true},onEdit={editing=it;dialog=true})
                         1 -> CalendarPage(rows,cats,onEdit={editing=it;dialog=true})
@@ -252,10 +252,10 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             val income=thisMonth.filter{it.type=="INCOME"}.sumOf{it.amountPaise}
             val yesterday=now.minusDays(1)
             val todaySpend=spent(rows.filter{between(it,now,now)})
-            val previousMonthTotal=spent(rows.filter{between(it,now.minusMonths(1).withDayOfMonth(1),now.withDayOfMonth(1).minusDays(1))})
+            val previousMonthTotal=previous
             val delta=current-previousMonthTotal
             Column(Modifier.padding(horizontal=18.dp).glass(RoundedCornerShape(22.dp)).padding(15.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
-                InsightLine(Icons.Default.AutoAwesome,when{current==0L->"Add a few expenses to unlock spending insights.";previousMonthTotal==0L->"You have spent ${cash(current)} so far this month.";delta>0->"Spending is ${cash(delta)} higher than the previous full month.";delta<0->"Spending is ${cash(-delta)} lower than the previous full month.";else->"Your spending matches the previous month."})
+                InsightLine(Icons.Default.AutoAwesome,when{current==0L->"Add a few expenses to unlock spending insights.";previousMonthTotal==0L->"You have spent ${cash(current)} so far this month.";delta>0->"Spending is ${cash(delta)} higher than the same period last month.";delta<0->"Spending is ${cash(-delta)} lower than the same period last month.";else->"Your spending matches the same period last month."})
                 if(top!=null&&top.second>0) InsightLine(Icons.Default.Leaderboard,"${top.first.name} is your highest-spending category at ${cash(top.second)}.")
                 if(todaySpend>0) InsightLine(Icons.Default.Today,"You have spent ${cash(todaySpend)} today.")
                 if(budget>0 && current>budget) InsightLine(Icons.Default.Warning,"You are ${cash(current-budget)} over your monthly budget.")
