@@ -3,7 +3,7 @@
     android:minHeight="48dp"
     android:targetCellWidth="1"
     android:targetCellHeight="1"
-    android:updatePeriodMillis="0"
+    android:updatePeriodMillis="1800000"
     android:initialLayout="@layout/widget_ruvo"
     android:resizeMode="none"
     android:widgetCategory="home_screen" />
