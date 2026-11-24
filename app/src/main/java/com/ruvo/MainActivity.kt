@@ -90,7 +90,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             }
         }
         if(dialog) EntryDialog(editing,cats,{dialog=false;editing=null},{vm.save(it);dialog=false;editing=null},{categoryDialog=true})
-        if(categoryDialog) CategoryDialog(editingCategory,{categoryDialog=false;editingCategory=null},{item->if(item.id==0L) vm.addCategory(item.name,item.icon,item.color,item.isIncome) else vm.updateCategory(item);categoryDialog=false;editingCategory=null})
+        if(categoryDialog) CategoryDialog(editingCategory,{categoryDialog=false;editingCategory=null},{item->if(item.id==0L) vm.addCategory(item.name,item.icon,item.color,item.isIncome) else vm.updateCategory(item);categoryDialog=false;editingCategory=null},{item->vm.deleteCategory(item);categoryDialog=false;editingCategory=null})
         if(budgetDialog) BudgetDialog(budget,{budget=it;prefs.edit().putString("monthly_budget",it).apply();budgetDialog=false},{budgetDialog=false})
     }
 }
