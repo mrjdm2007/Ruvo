@@ -275,8 +275,11 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     val snackbar = remember { SnackbarHostState() }
     var deleted by remember { mutableStateOf<RuvoTransaction?>(null) }
     var filter by remember{mutableStateOf("All")}
+    var fromDate by remember{mutableStateOf<LocalDate?>(null)}
+    var toDate by remember{mutableStateOf<LocalDate?>(null)}
+    var datePickerTarget by remember{mutableStateOf<String?>(null)}
     var pending by remember{mutableStateOf<RuvoTransaction?>(null)}
-    val shown=rows.filter{(filter=="All"||it.type==filter)&&(query.isBlank()||it.note.contains(query,true)||cats.find{c->c.id==it.categoryId}?.name?.contains(query,true)==true||cash(it.amountPaise).contains(query,true))}
+    val shown=rows.filter{(filter=="All"||it.type==filter)&&(fromDate==null||it.timestamp>=midnight(fromDate!!))&&(toDate==null||it.timestamp<midnight(toDate!!.plusDays(1)))&&(query.isBlank()||it.note.contains(query,true)||cats.find{c->c.id==it.categoryId}?.name?.contains(query,true)==true||cash(it.amountPaise).contains(query,true))}
     LaunchedEffect(deleted) {
         val item = deleted
         if (item != null) {
@@ -289,7 +292,13 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         Column(Modifier.fillMaxSize()){
             Heading("Activity","Every entry, all in one place.")
             OutlinedTextField(query,onQuery,Modifier.fillMaxWidth().padding(horizontal=18.dp),placeholder={Text("Search transactions")},leadingIcon={Icon(Icons.Default.Search,null)},singleLine=true,shape=RoundedCornerShape(15.dp))
-            Row(Modifier.padding(18.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){listOf("All","EXPENSE","INCOME").forEach{FilterChip(selected=filter==it,onClick={filter=it},label={Text(when(it){"EXPENSE"->"Expenses";"INCOME"->"Income";else->it})})}}
+            Row(Modifier.padding(horizontal=18.dp, vertical=10.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){listOf("All","EXPENSE","INCOME").forEach{FilterChip(selected=filter==it,onClick={filter=it},label={Text(when(it){"EXPENSE"->"Expenses";"INCOME"->"Income";else->it})})}}
+            Row(Modifier.fillMaxWidth().padding(horizontal=18.dp),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically){
+                OutlinedButton(onClick={datePickerTarget="from"},modifier=Modifier.weight(1f),contentPadding=PaddingValues(horizontal=8.dp,vertical=7.dp)){Icon(Icons.Default.CalendarMonth,null,modifier=Modifier.size(16.dp));Spacer(Modifier.width(5.dp));Text(fromDate?.format(DateTimeFormatter.ofPattern("d MMM yy"))?:"From date",fontSize=11.sp)}
+                OutlinedButton(onClick={datePickerTarget="to"},modifier=Modifier.weight(1f),contentPadding=PaddingValues(horizontal=8.dp,vertical=7.dp)){Icon(Icons.Default.CalendarMonth,null,modifier=Modifier.size(16.dp));Spacer(Modifier.width(5.dp));Text(toDate?.format(DateTimeFormatter.ofPattern("d MMM yy"))?:"To date",fontSize=11.sp)}
+                if(fromDate!=null||toDate!=null) TextButton(onClick={fromDate=null;toDate=null}){Text("Clear",fontSize=11.sp)}
+            }
+            if(fromDate!=null&&toDate!=null&&toDate!!.isBefore(fromDate!!)) Text("End date must be on or after the start date.",color=Color(0xFFB45E52),fontSize=11.sp,modifier=Modifier.padding(horizontal=20.dp,vertical=4.dp))
             LazyColumn(contentPadding=PaddingValues(horizontal=18.dp,vertical=4.dp)){
                 items(shown,key={it.id}){t->
                     var dx by remember{mutableFloatStateOf(0f)}
@@ -303,6 +312,11 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             }
         }
         SnackbarHost(snackbar,Modifier.align(Alignment.BottomCenter))
+    }
+    datePickerTarget?.let { target ->
+        val current = if(target=="from") fromDate else toDate
+        val pickerState = rememberDatePickerState(initialSelectedDateMillis=(current?:LocalDate.now()).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
+        DatePickerDialog(onDismissRequest={datePickerTarget=null},confirmButton={TextButton(onClick={pickerState.selectedDateMillis?.let{millis->val picked=Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate();if(target=="from")fromDate=picked else toDate=picked};datePickerTarget=null}){Text("Apply")}},dismissButton={TextButton(onClick={datePickerTarget=null}){Text("Cancel")}}){DatePicker(state=pickerState)}
     }
     pending?.let{t->AlertDialog(onDismissRequest={pending=null},title={Text("Delete entry?")},text={Text("This transaction will be removed.")},confirmButton={TextButton(onClick={onDelete(t);deleted=t;pending=null}){Text("Delete")}},dismissButton={TextButton(onClick={pending=null}){Text("Cancel")}})}
 }
