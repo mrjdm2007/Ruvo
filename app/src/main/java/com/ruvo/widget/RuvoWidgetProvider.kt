@@ -20,34 +20,58 @@ import java.util.Locale
 
 class RuvoWidgetProvider : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
-        super.onReceive(context, intent)
-        if (intent.action == "com.ruvo.UPDATE_WIDGET") updateAll(context)
+        if (intent.action == ACTION_REFRESH) {
+            val pending = goAsync()
+            refresh(context, pending)
+        } else {
+            super.onReceive(context, intent)
+        }
     }
-    override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) = updateAll(context)
 
-    private fun updateAll(context: Context) {
-        val manager = AppWidgetManager.getInstance(context)
-        val ids = manager.getAppWidgetIds(ComponentName(context, RuvoWidgetProvider::class.java))
-        if (ids.isEmpty()) return
+    override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
+        val pending = goAsync()
+        refresh(context, pending)
+    }
+
+    private fun refresh(context: Context, pending: PendingResult) {
         CoroutineScope(Dispatchers.IO).launch {
-            val today = LocalDate.now()
-            val rows = RuvoDatabase.get(context).dao().between(today.startMillis(), today.endMillis())
-            val total = rows.filter { it.type == "EXPENSE" }.sumOf { it.amountPaise }
-            val amount = String.format(Locale("en", "IN"), "₹%,.0f", total / 100.0)
-            ids.forEach { id ->
-                val views = RemoteViews(context.packageName, R.layout.widget_ruvo)
-                views.setTextViewText(R.id.widget_amount, amount)
-                val open = Intent(context, MainActivity::class.java)
-                val openPi = PendingIntent.getActivity(context, 10, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-                val add = Intent(context, MainActivity::class.java).setAction(MainActivity.ACTION_QUICK_ADD)
-                val addPi = PendingIntent.getActivity(context, 11, add, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-                views.setOnClickPendingIntent(R.id.widget_root, openPi)
-                views.setOnClickPendingIntent(R.id.widget_brand, openPi)
-                views.setOnClickPendingIntent(R.id.widget_amount, openPi)
-                views.setOnClickPendingIntent(R.id.widget_today, openPi)
-                views.setOnClickPendingIntent(R.id.widget_add, addPi)
-                manager.updateAppWidget(id, views)
+            try {
+                val manager = AppWidgetManager.getInstance(context)
+                val ids = manager.getAppWidgetIds(ComponentName(context, RuvoWidgetProvider::class.java))
+                if (ids.isEmpty()) return@launch
+                val today = LocalDate.now()
+                val rows = RuvoDatabase.get(context).dao().between(today.startMillis(), today.endMillis())
+                val total = rows.filter { it.type == "EXPENSE" }.sumOf { it.amountPaise }
+                val amount = NumberFormatCompat.format(total)
+                ids.forEach { id ->
+                    val views = RemoteViews(context.packageName, R.layout.widget_ruvo)
+                    views.setTextViewText(R.id.widget_amount, amount)
+                    val open = Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    }
+                    val openPi = PendingIntent.getActivity(context, 10, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                    val add = Intent(context, MainActivity::class.java).apply {
+                        action = MainActivity.ACTION_QUICK_ADD
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    }
+                    val addPi = PendingIntent.getActivity(context, 11, add, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                    views.setOnClickPendingIntent(R.id.widget_root, openPi)
+                    views.setOnClickPendingIntent(R.id.widget_add, addPi)
+                    manager.updateAppWidget(id, views)
+                }
+            } catch (_: Exception) {
+                // Keep the last rendered widget content if the local database is temporarily unavailable.
+            } finally {
+                pending.finish()
             }
         }
+    }
+
+    private object NumberFormatCompat {
+        fun format(paise: Long): String = String.format(Locale("en", "IN"), "₹%,.0f", paise / 100.0)
+    }
+
+    companion object {
+        const val ACTION_REFRESH = "com.ruvo.UPDATE_WIDGET"
     }
 }
