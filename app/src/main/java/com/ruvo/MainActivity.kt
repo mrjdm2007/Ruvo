@@ -76,11 +76,23 @@ private val TextPrimary = Color(0xFFF0F5F1)
 @Composable
 private fun Modifier.glass(shape: RoundedCornerShape = RoundedCornerShape(22.dp)): Modifier {
     val surface = MaterialTheme.colorScheme.surface
+    val edge = Brush.linearGradient(
+        listOf(Color.White.copy(alpha = 0.30f), Mint.copy(alpha = 0.16f), Color.White.copy(alpha = 0.055f))
+    )
     return this
-        .shadow(16.dp, shape, ambientColor = Color.Black.copy(alpha = 0.22f), spotColor = Mint.copy(alpha = 0.035f))
+        .shadow(20.dp, shape, ambientColor = Color.Black.copy(alpha = 0.30f), spotColor = Mint.copy(alpha = 0.075f))
         .clip(shape)
-        .background(Brush.verticalGradient(listOf(surface.copy(alpha = 0.98f), surface.copy(alpha = 0.88f))))
-        .border(1.dp, Color.White.copy(alpha = 0.10f), shape)
+        .background(
+            Brush.linearGradient(
+                listOf(
+                    Color.White.copy(alpha = 0.105f),
+                    surface.copy(alpha = 0.78f),
+                    surface.copy(alpha = 0.66f),
+                    Mint.copy(alpha = 0.035f)
+                )
+            )
+        )
+        .border(1.dp, edge, shape)
         .animateContentSize(animationSpec = spring(dampingRatio = 0.88f, stiffness = 420f))
 }
 
@@ -156,7 +168,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     }
     MaterialTheme(colorScheme=colors) {
         Scaffold(containerColor=colors.background, bottomBar={
-            NavigationBar(containerColor=colors.surface.copy(alpha=0.92f), tonalElevation=8.dp) {
+            NavigationBar(modifier=Modifier.padding(horizontal=12.dp, vertical=7.dp).clip(RoundedCornerShape(26.dp)).border(1.dp,Brush.linearGradient(listOf(Color.White.copy(alpha=.24f),Mint.copy(alpha=.12f),Color.White.copy(alpha=.05f))),RoundedCornerShape(26.dp)),containerColor=colors.surface.copy(alpha=0.76f),tonalElevation=0.dp) {
                 val icons=listOf(Icons.Default.SpaceDashboard,Icons.Default.CalendarMonth,Icons.Default.ReceiptLong,Icons.Default.Tune)
                 listOf("Home","Calendar","History","More").forEachIndexed { i,s ->
                     NavigationBarItem(selected=page==i,onClick={haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);page=i},icon={Icon(icons[i],null)},label={Text(s,fontSize=10.sp)})
@@ -180,7 +192,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         if(categoryDialog) CategoryDialog(editingCategory,{categoryDialog=false;editingCategory=null},{item->if(item.id==0L) vm.addCategory(item.name,item.icon,item.color,item.isIncome) else vm.updateCategory(item);categoryDialog=false;editingCategory=null},{item->vm.deleteCategory(item);categoryDialog=false;editingCategory=null})
         if(budgetDialog) BudgetDialog(budget,{budget=it;prefs.edit().putString("monthly_budget",it).apply();budgetDialog=false},{budgetDialog=false})
         if(pinSetup) PinSetupDialog({pinSetup=false},{pin->pinHash=pinDigest(pin);prefs.edit().putString("app_pin_hash",pinHash).apply();locked=false;pinSetup=false})
-        if(locked) AlertDialog(onDismissRequest={},title={Text("RUVO is locked")},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){Text("Enter your app PIN to continue.",fontSize=12.sp,color=Muted);OutlinedTextField(pinEntry,{pinEntry=it.filter(Char::isDigit).take(6);pinError=false},label={Text("PIN")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),singleLine=true,isError=pinError);if(pinError)Text("Incorrect PIN",color=Color(0xFFFF9B91),fontSize=11.sp)}},confirmButton={TextButton(onClick={if(pinHash!=null && pinDigest(pinEntry)==pinHash){locked=false;pinEntry="";pinError=false}else pinError=true}){Text("Unlock")}})
+        if(locked) AlertDialog(containerColor=NightSurface,tonalElevation=0.dp,onDismissRequest={},title={Text("RUVO is locked")},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){Text("Enter your app PIN to continue.",fontSize=12.sp,color=Muted);OutlinedTextField(pinEntry,{pinEntry=it.filter(Char::isDigit).take(6);pinError=false},label={Text("PIN")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),singleLine=true,isError=pinError);if(pinError)Text("Incorrect PIN",color=Color(0xFFFF9B91),fontSize=11.sp)}},confirmButton={TextButton(onClick={if(pinHash!=null && pinDigest(pinEntry)==pinHash){locked=false;pinEntry="";pinError=false}else pinError=true}){Text("Unlock")}})
     }
 }
 
@@ -206,7 +218,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     LazyColumn(contentPadding=PaddingValues(bottom=90.dp),verticalArrangement=Arrangement.spacedBy(15.dp)) {
         item { Heading("ruvo","A little more clarity with every day.") }
         item {
-            Column(Modifier.padding(horizontal=18.dp).shadow(16.dp,RoundedCornerShape(28.dp),ambientColor=Forest.copy(alpha=.16f),spotColor=Forest.copy(alpha=.22f)).clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Color(0xFF214D3E),Forest,Color(0xFF102F26)))).border(1.dp,Color.White.copy(alpha=.20f),RoundedCornerShape(28.dp)).padding(21.dp)) {
+            Column(Modifier.padding(horizontal=18.dp).glass(RoundedCornerShape(28.dp)).padding(21.dp)) {
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text("TOTAL SPENT",color=Sage,fontSize=10.sp,letterSpacing=1.5.sp);Icon(Icons.Default.Wallet,null,tint=Sage)}
                 AnimatedContent(spent(shown),label="amount"){Text(cash(it),fontSize=34.sp,color=Color.White,fontWeight=FontWeight.SemiBold)}
                 Spacer(Modifier.height(16.dp))
@@ -430,7 +442,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     datePickerTarget?.let { target ->
         val current = if(target=="from") fromDate else toDate
         val pickerState = rememberDatePickerState(initialSelectedDateMillis=(current?:LocalDate.now()).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
-        DatePickerDialog(onDismissRequest={datePickerTarget=null},confirmButton={TextButton(onClick={pickerState.selectedDateMillis?.let{millis->val picked=Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate();if(target=="from")fromDate=picked else toDate=picked};datePickerTarget=null}){Text("Apply")}},dismissButton={TextButton(onClick={datePickerTarget=null}){Text("Cancel")}}){DatePicker(state=pickerState)}
+        DatePickerDialog(colors=DatePickerDefaults.colors(containerColor=NightSurface),onDismissRequest={datePickerTarget=null},confirmButton={TextButton(onClick={pickerState.selectedDateMillis?.let{millis->val picked=Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate();if(target=="from")fromDate=picked else toDate=picked};datePickerTarget=null}){Text("Apply")}},dismissButton={TextButton(onClick={datePickerTarget=null}){Text("Cancel")}}){DatePicker(state=pickerState)}
     }
     pending?.let{t->AlertDialog(onDismissRequest={pending=null},title={Text("Delete entry?")},text={Text("This transaction will be removed.")},confirmButton={TextButton(onClick={onDelete(t);deleted=t;pending=null}){Text("Delete")}},dismissButton={TextButton(onClick={pending=null}){Text("Cancel")}})}
 }
@@ -463,7 +475,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                     }.padding(vertical=11.dp),contentAlignment=Alignment.Center){Text(if(v=="EXPENSE")"Expense" else "Income",fontSize=13.sp,fontWeight=FontWeight.SemiBold,color=if(selected)Color(0xFF082016) else Color(0xFFAABBB0))}
                 }
             }
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Brush.verticalGradient(listOf(Color(0xFF22352B),Color(0xFF192720)))).border(1.dp,Color.White.copy(alpha=.10f),RoundedCornerShape(22.dp)).padding(16.dp)){
+            Column(Modifier.fillMaxWidth().glass(RoundedCornerShape(22.dp)).padding(16.dp)){
                 Text("AMOUNT",fontSize=10.sp,color=Color(0xFFB4D8BF),letterSpacing=1.3.sp,fontWeight=FontWeight.SemiBold)
                 Row(verticalAlignment=Alignment.CenterVertically){
                     Text("₹",fontSize=28.sp,color=Mint,fontWeight=FontWeight.Medium)
