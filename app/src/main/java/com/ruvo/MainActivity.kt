@@ -84,7 +84,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                 when(page) {
                     0 -> Home(rows,cats,budget.toLongOrNull()?.times(100)?:1500000L,onBudget={budgetDialog=true},onEdit={editing=it;dialog=true})
                     1 -> CalendarPage(rows,cats,onEdit={editing=it;dialog=true})
-                    2 -> History(rows,cats,search,{search=it},onEdit={editing=it;dialog=true},onDelete={vm.delete(it)})
+                    2 -> History(rows,cats,search,{search=it},onEdit={editing=it;dialog=true},onDelete={vm.delete(it)},onRestore={vm.restore(it)})
                     else -> More(cats,dark,{dark=it;prefs.edit().putBoolean("dark_mode",it).apply()},{editingCategory=null;categoryDialog=true},{budgetDialog=true},budget,onEditCategory={editingCategory=it;categoryDialog=true})
                 }
             }
@@ -230,7 +230,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             }
         }
     }
-    pending?.let{t->AlertDialog(onDismissRequest={pending=null},title={Text("Delete entry?")},text={Text("This transaction will be removed.")},confirmButton={TextButton(onClick={onDelete(t);pending=null}){Text("Delete")}},dismissButton={TextButton(onClick={pending=null}){Text("Cancel")}})}
+    pending?.let{t->AlertDialog(onDismissRequest={pending=null},title={Text("Delete entry?")},text={Text("This transaction will be removed.")},confirmButton={TextButton(onClick={onDelete(t);deleted=t;pending=null}){Text("Delete")}},dismissButton={TextButton(onClick={pending=null}){Text("Cancel")}})}
 }
 
 @Composable private fun EntryDialog(existing:RuvoTransaction?,cats:List<RuvoCategory>,onDismiss:()->Unit,onSave:(RuvoTransaction)->Unit,onAddCategory:()->Unit){
