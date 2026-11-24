@@ -16,8 +16,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 class RuvoWidgetProvider : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -46,20 +44,12 @@ class RuvoWidgetProvider : AppWidgetProvider() {
                 val amount = NumberFormatCompat.format(total)
                 ids.forEach { id ->
                     val views = RemoteViews(context.packageName, R.layout.widget_ruvo)
-                    views.setTextViewText(R.id.widget_amount, amount)
-                    views.setTextViewText(R.id.widget_today, today.format(DateTimeFormatter.ofPattern("EEEE · d MMM", Locale.ENGLISH)))
-                    views.setContentDescription(R.id.widget_root, "RUVO. Today’s spending is $amount")
-                    val open = Intent(context, MainActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    }
-                    val openPi = PendingIntent.getActivity(context, 10, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                     val add = Intent(context, MainActivity::class.java).apply {
                         action = MainActivity.ACTION_QUICK_ADD
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     }
                     val addPi = PendingIntent.getActivity(context, 11, add, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-                    views.setOnClickPendingIntent(R.id.widget_root, openPi)
-                    views.setOnClickPendingIntent(R.id.widget_add, addPi)
+                    views.setOnClickPendingIntent(R.id.widget_root, addPi)
                     manager.updateAppWidget(id, views)
                 }
             } catch (_: Exception) {
