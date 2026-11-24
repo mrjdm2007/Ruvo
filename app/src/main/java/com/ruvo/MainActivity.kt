@@ -316,6 +316,8 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         item{Column(Modifier.padding(horizontal=18.dp).clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).padding(16.dp)){
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Column{Text("Dark appearance",fontWeight=FontWeight.Medium);Text("A quieter look after dark",fontSize=11.sp,color=Muted)};Switch(dark,onDark)}
             HorizontalDivider(Modifier.padding(vertical=10.dp))
+            Row(Modifier.fillMaxWidth().clickable{onSetPin()}.padding(vertical=7.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("App PIN lock");Text(if(pinEnabled)"Enabled · Change" else "Set PIN",color=Forest)}
+            HorizontalDivider(Modifier.padding(vertical=10.dp))
             Row(Modifier.fillMaxWidth().clickable{onBudget()}.padding(vertical=7.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("Monthly budget");Text("₹$budget",color=Forest)}
         }}
         item{Row(Modifier.fillMaxWidth().padding(horizontal=22.dp,vertical=15.dp),horizontalArrangement=Arrangement.SpaceBetween){Column{Text("Your categories",fontSize=17.sp,fontWeight=FontWeight.SemiBold);Text("Personalise your spending",fontSize=11.sp,color=Muted)};TextButton(onClick=onAdd){Text("Add")}}}
