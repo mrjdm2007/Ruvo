@@ -349,7 +349,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                 Text(if(income) "Income category" else "Expense category",fontSize=12.sp,color=Muted)
             }
             Text("ICON",fontSize=10.sp,color=Muted,fontWeight=FontWeight.SemiBold)
-            Row(horizontalArrangement=Arrangement.spacedBy(5.dp)) { listOf("category","restaurant","directions_bus","shopping_bag","school","coffee","receipt","payments").forEach { key -> FilterChip(selected=icon==key,onClick={icon=key},label={Icon(categoryGlyph(key),null,modifier=Modifier.size(16.dp))}) } }
+            listOf("category","restaurant","directions_bus","shopping_bag","school","coffee","receipt","payments").chunked(4).forEach { group -> Row(horizontalArrangement=Arrangement.spacedBy(5.dp)) { group.forEach { key -> FilterChip(selected=icon==key,onClick={icon=key},label={Icon(categoryGlyph(key),null,modifier=Modifier.size(16.dp))}) } } }
             Text("COLOUR",fontSize=10.sp,color=Muted,fontWeight=FontWeight.SemiBold)
             Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){palette.forEach{c->Box(Modifier.size(27.dp).clip(CircleShape).background(Color(c)).clickable{color=c},contentAlignment=Alignment.Center){if(c==color)Icon(Icons.Default.Check,null,tint=Color.White)}}}
         }
@@ -388,7 +388,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             val index=orderedCats.indexOfFirst{it.id==c.id}
             Row(Modifier.fillMaxWidth().padding(horizontal=18.dp,vertical=5.dp),verticalAlignment=Alignment.CenterVertically){
                 Row(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable{onEditCategory(c)}.padding(vertical=8.dp),verticalAlignment=Alignment.CenterVertically){
-                    Box(Modifier.size(11.dp).clip(CircleShape).background(Color(c.color)))
+                    Box(Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(Color(c.color).copy(alpha=.16f)),contentAlignment=Alignment.Center){Icon(categoryGlyph(c.icon),null,tint=Color(c.color),modifier=Modifier.size(18.dp))}
                     Column(Modifier.weight(1f).padding(start=10.dp)){Text(c.name,fontSize=13.sp);Text(if(c.isIncome)"Income" else "Expense",fontSize=10.sp,color=Muted)}
                     Icon(Icons.Default.Edit,null,tint=Muted,modifier=Modifier.size(16.dp))
                 }
