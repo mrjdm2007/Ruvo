@@ -8,8 +8,7 @@
     android:text="Add+"
     android:textColor="#EAF7EF"
     android:textSize="16sp"
-    android:textStyle="medium"
-    android:fontFamily="sans"
+    android:fontFamily="sans-serif-medium"
     android:contentDescription="Add expense"
     android:paddingHorizontal="12dp"
     android:paddingVertical="4dp" />
