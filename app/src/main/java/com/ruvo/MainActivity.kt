@@ -1,12 +1,17 @@
 package com.ruvo
 
 import android.os.Bundle
+import android.app.Activity
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
@@ -22,11 +27,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ruvo.data.*
@@ -42,6 +50,17 @@ private val Forest = Color(0xFF173F32)
 private val Sage = Color(0xFFA9C6A5)
 private val Ivory = Color(0xFFF3F1E9)
 private val Muted = Color(0xFF7C887F)
+
+@Composable
+private fun Modifier.glass(shape: RoundedCornerShape = RoundedCornerShape(22.dp)): Modifier {
+    val surface = MaterialTheme.colorScheme.surface
+    return this
+        .shadow(12.dp, shape, ambientColor = Forest.copy(alpha = 0.10f), spotColor = Forest.copy(alpha = 0.12f))
+        .clip(shape)
+        .background(Brush.verticalGradient(listOf(surface.copy(alpha = 0.94f), surface.copy(alpha = 0.78f))))
+        .border(1.dp, Color.White.copy(alpha = if (MaterialTheme.colorScheme.background == Ivory) 0.72f else 0.10f), shape)
+}
+
 private fun pinDigest(pin:String)=MessageDigest.getInstance("SHA-256").digest(pin.toByteArray()).joinToString("") { "%02x".format(it) }
 
 class MainActivity : ComponentActivity() {
@@ -85,9 +104,13 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     var pinSetup by remember { mutableStateOf(false) }
     var search by remember { mutableStateOf("") }
     val colors=if(dark) darkColorScheme(primary=Sage,background=Color(0xFF111A16),surface=Color(0xFF1C2821)) else lightColorScheme(primary=Forest,background=Ivory,surface=Color.White)
+    BackHandler {
+        if (page != 0) page = 0
+        else (context as? Activity)?.moveTaskToBack(true)
+    }
     MaterialTheme(colorScheme=colors) {
         Scaffold(containerColor=colors.background, bottomBar={
-            NavigationBar(containerColor=colors.surface) {
+            NavigationBar(containerColor=colors.surface.copy(alpha=0.92f), tonalElevation=8.dp) {
                 val icons=listOf(Icons.Default.SpaceDashboard,Icons.Default.CalendarMonth,Icons.Default.ReceiptLong,Icons.Default.Tune)
                 listOf("Home","Calendar","History","More").forEachIndexed { i,s ->
                     NavigationBarItem(selected=page==i,onClick={page=i},icon={Icon(icons[i],null)},label={Text(s,fontSize=10.sp)})
@@ -97,11 +120,13 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             FloatingActionButton(onClick={editing=null;dialog=true},containerColor=Forest,contentColor=Color.White,shape=RoundedCornerShape(20.dp)){Icon(Icons.Default.Add,null)}
         }) { padding ->
             Box(Modifier.fillMaxSize().padding(padding)) {
-                when(page) {
-                    0 -> Home(rows,cats,parsePaise(budget)?:1500000L,onBudget={budgetDialog=true},onEdit={editing=it;dialog=true})
-                    1 -> CalendarPage(rows,cats,onEdit={editing=it;dialog=true})
-                    2 -> History(rows,cats,search,{search=it},onEdit={editing=it;dialog=true},onDelete={vm.delete(it)},onRestore={vm.restore(it)})
-                    else -> More(cats,dark,{dark=it;prefs.edit().putBoolean("dark_mode",it).apply()},{editingCategory=null;categoryDialog=true},{budgetDialog=true},budget,onEditCategory={editingCategory=it;categoryDialog=true},pinEnabled=pinHash!=null,onSetPin={pinSetup=true},onDisablePin={pinHash=null;prefs.edit().remove("app_pin_hash").apply();locked=false})
+                AnimatedContent(targetState=page,label="page-transition") { activePage ->
+                    when(activePage) {
+                        0 -> Home(rows,cats,parsePaise(budget)?:1500000L,onBudget={budgetDialog=true},onEdit={editing=it;dialog=true})
+                        1 -> CalendarPage(rows,cats,onEdit={editing=it;dialog=true})
+                        2 -> History(rows,cats,search,{search=it},onEdit={editing=it;dialog=true},onDelete={vm.delete(it)},onRestore={vm.restore(it)})
+                        else -> More(cats,dark,{dark=it;prefs.edit().putBoolean("dark_mode",it).apply()},{editingCategory=null;categoryDialog=true},{budgetDialog=true},budget,onEditCategory={editingCategory=it;categoryDialog=true},pinEnabled=pinHash!=null,onSetPin={pinSetup=true},onDisablePin={pinHash=null;prefs.edit().remove("app_pin_hash").apply();locked=false})
+                    }
                 }
             }
         }
@@ -135,7 +160,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     LazyColumn(contentPadding=PaddingValues(bottom=90.dp),verticalArrangement=Arrangement.spacedBy(15.dp)) {
         item { Heading("ruvo","A little more clarity with every day.") }
         item {
-            Column(Modifier.padding(horizontal=18.dp).clip(RoundedCornerShape(28.dp)).background(Forest).padding(21.dp)) {
+            Column(Modifier.padding(horizontal=18.dp).shadow(16.dp,RoundedCornerShape(28.dp),ambientColor=Forest.copy(alpha=.16f),spotColor=Forest.copy(alpha=.22f)).clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Color(0xFF214D3E),Forest,Color(0xFF102F26)))).border(1.dp,Color.White.copy(alpha=.20f),RoundedCornerShape(28.dp)).padding(21.dp)) {
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text("TOTAL SPENT",color=Sage,fontSize=10.sp,letterSpacing=1.5.sp);Icon(Icons.Default.Wallet,null,tint=Sage)}
                 AnimatedContent(spent(shown),label="amount"){Text(cash(it),fontSize=34.sp,color=Color.White,fontWeight=FontWeight.SemiBold)}
                 Spacer(Modifier.height(16.dp))
@@ -150,7 +175,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         item { Section("Category breakdown","This month") }
         item {
             val grouped=thisMonth.filter{it.type=="EXPENSE"}.groupBy{it.categoryId}.mapValues{it.value.sumOf{t->t.amountPaise}}.entries.sortedByDescending{it.value}.take(6)
-            Column(Modifier.padding(horizontal=18.dp).clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
+            Column(Modifier.padding(horizontal=18.dp).glass(RoundedCornerShape(22.dp)).padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
                 if(grouped.isEmpty()) Empty("Your category insights will appear here.")
                 grouped.forEach{e->
                     val c=cats.find{it.id==e.key}
@@ -173,7 +198,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         }
         item { Section("Recent activity","Latest entries") }
         item {
-            Column(Modifier.padding(horizontal=18.dp).clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).padding(horizontal=14.dp)){
+            Column(Modifier.padding(horizontal=18.dp).glass(RoundedCornerShape(22.dp)).padding(horizontal=14.dp)){
                 if(rows.isEmpty()) Empty("Add your first expense to get started.")
                 rows.take(5).forEach{TransactionLine(it,cats,onClick={onEdit(it)})}
             }
@@ -199,7 +224,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     val chosen=rows.filter{between(it,selected,selected)}
     Column(Modifier.fillMaxSize()){
         Heading("Calendar","Your spending, day by day.")
-        Column(Modifier.padding(horizontal=18.dp).animateContentSize().pointerInput(month){detectHorizontalDragGestures(onHorizontalDrag={_,dx->monthDrag+=dx},onDragEnd={if(monthDrag < -60f){month=month.plusMonths(1);selected=month.atDay(1)}else if(monthDrag > 60f){month=month.minusMonths(1);selected=month.atDay(1)};monthDrag=0f})}.clip(RoundedCornerShape(25.dp)).background(MaterialTheme.colorScheme.surface).padding(15.dp)){
+        Column(Modifier.padding(horizontal=18.dp).animateContentSize().pointerInput(month){detectHorizontalDragGestures(onHorizontalDrag={_,dx->monthDrag+=dx},onDragEnd={if(monthDrag < -60f){month=month.plusMonths(1);selected=month.atDay(1)}else if(monthDrag > 60f){month=month.minusMonths(1);selected=month.atDay(1)};monthDrag=0f})}.glass(RoundedCornerShape(25.dp)).padding(15.dp)){
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
                 IconButton(onClick={month=month.minusMonths(1);selected=month.atDay(1)}){Icon(Icons.Default.ChevronLeft,null)}
                 Text(month.format(DateTimeFormatter.ofPattern("MMMM yyyy")),fontWeight=FontWeight.SemiBold,fontSize=17.sp)
@@ -223,7 +248,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             }
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Text("Less",fontSize=10.sp,color=Muted);Row(horizontalArrangement=Arrangement.spacedBy(4.dp)){listOf(Color(0xFFF0F1EB),Color(0xFFDCE8D8),Color(0xFFB5CEB0),Color(0xFF7FA17E),Forest).forEach{Box(Modifier.size(13.dp).clip(RoundedCornerShape(3.dp)).background(it))}};Text("More",fontSize=10.sp,color=Muted)}
         }
-        Column(Modifier.padding(18.dp).clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).padding(15.dp)){
+        Column(Modifier.padding(18.dp).glass(RoundedCornerShape(22.dp)).padding(15.dp)){
             Text(selected.format(DateTimeFormatter.ofPattern("EEEE, d MMMM")),fontSize=12.sp,color=Muted)
             Text(cash(spent(chosen)),fontSize=26.sp,fontWeight=FontWeight.SemiBold,color=Forest)
             if(chosen.isEmpty()) Empty("Nothing recorded on this day.") else chosen.forEach{TransactionLine(it,cats){onEdit(it)}}
@@ -253,7 +278,8 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             LazyColumn(contentPadding=PaddingValues(horizontal=18.dp,vertical=4.dp)){
                 items(shown,key={it.id}){t->
                     var dx by remember{mutableFloatStateOf(0f)}
-                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surface).pointerInput(t.id){detectHorizontalDragGestures(onHorizontalDrag={_,d->dx=(dx+d).coerceIn(-100f,100f)},onDragEnd={if(dx < -55)pending=t else if(dx>55)onEdit(t);dx=0f})}.clickable{onEdit(t)}.padding(13.dp),verticalAlignment=Alignment.CenterVertically){
+                    val swipeOffset by animateDpAsState(dx.dp, animationSpec=spring(dampingRatio=0.72f, stiffness=420f), label="swipe-row")
+                    Row(Modifier.fillMaxWidth().offset(x=swipeOffset).clip(RoundedCornerShape(14.dp)).glass(RoundedCornerShape(14.dp)).pointerInput(t.id){detectHorizontalDragGestures(onHorizontalDrag={_,d->dx=(dx+d).coerceIn(-92f,92f)},onDragEnd={if(dx < -55)pending=t else if(dx>55)onEdit(t);dx=0f})}.clickable{onEdit(t)}.padding(13.dp),verticalAlignment=Alignment.CenterVertically){
                         Column(Modifier.weight(1f)){Text(cats.find{it.id==t.categoryId}?.name?:"Entry",fontSize=13.sp,fontWeight=FontWeight.Medium);Text(t.note.ifBlank{"Tap to edit"},fontSize=10.sp,color=Muted)}
                         Text((if(t.type=="INCOME")"+" else "−")+cash(t.amountPaise),fontSize=13.sp,fontWeight=FontWeight.SemiBold)
                     }
