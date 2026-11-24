@@ -263,9 +263,9 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             Column(Modifier.padding(horizontal=18.dp).glass(RoundedCornerShape(22.dp)).padding(16.dp).animateContentSize()){
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
                     Text(if(current>budget) "Over budget" else "Remaining",color=Muted,fontSize=12.sp)
-                    Text(if(current>budget) cash(current-budget) else cash(budget-current),fontWeight=FontWeight.SemiBold,color=if(current>budget) Color(0xFFB45E52) else MaterialTheme.colorScheme.onSurface)
+                    Text(if(current>budget) cash(current-budget) else cash(budget-current),fontWeight=FontWeight.SemiBold,color=if(current>budget) Color(0xFFFF9B91) else MaterialTheme.colorScheme.onSurface)
                 }
-                Spacer(Modifier.height(9.dp));Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(Color(0xFF34453B))){Box(Modifier.fillMaxWidth(p).fillMaxHeight().background(if(p>=1)Color(0xFFB45E52) else Mint))}
+                Spacer(Modifier.height(9.dp));Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(Color(0xFF34453B))){Box(Modifier.fillMaxWidth(p).fillMaxHeight().background(if(p>=1)Color(0xFFFF9B91) else Mint))}
                 Text((p*100).toInt().toString()+"% used",fontSize=10.sp,color=Muted,modifier=Modifier.padding(top=6.dp))
             }
         }
@@ -349,7 +349,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             Column { Text("Monthly spending",fontSize=10.sp,color=Muted);Text(cash(monthExpense),fontSize=21.sp,fontWeight=FontWeight.SemiBold,color=MaterialTheme.colorScheme.primary) }
             Column(horizontalAlignment=Alignment.End) { Text("Daily average",fontSize=10.sp,color=Muted);Text(cash(monthAverage),fontSize=16.sp,fontWeight=FontWeight.SemiBold) }
         }
-        Row(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("Income  ${cash(monthIncome)}",fontSize=11.sp,color=MaterialTheme.colorScheme.primary);Text("Net  ${cash(monthIncome-monthExpense)}",fontSize=11.sp,color=if(monthIncome>=monthExpense)Forest else Color(0xFFB45E52))}
+        Row(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("Income  ${cash(monthIncome)}",fontSize=11.sp,color=MaterialTheme.colorScheme.primary);Text("Net  ${cash(monthIncome-monthExpense)}",fontSize=11.sp,color=if(monthIncome>=monthExpense)Mint else Color(0xFFFF9B91))}
         Column(Modifier.padding(horizontal=18.dp).animateContentSize().pointerInput(month){detectHorizontalDragGestures(onHorizontalDrag={_,dx->monthDrag+=dx},onDragEnd={if(kotlin.math.abs(monthDrag)>60f)haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);if(monthDrag < -60f){month=month.plusMonths(1);selected=month.atDay(1)}else if(monthDrag > 60f){month=month.minusMonths(1);selected=month.atDay(1)};monthDrag=0f})}.glass(RoundedCornerShape(25.dp)).padding(15.dp)){
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
                 IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);month=month.minusMonths(1);selected=month.atDay(1)}){Icon(Icons.Default.ChevronLeft,null)}
@@ -412,7 +412,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                 OutlinedButton(onClick={datePickerTarget="to"},modifier=Modifier.weight(1f),contentPadding=PaddingValues(horizontal=8.dp,vertical=7.dp)){Icon(Icons.Default.CalendarMonth,null,modifier=Modifier.size(16.dp));Spacer(Modifier.width(5.dp));Text(toDate?.format(DateTimeFormatter.ofPattern("d MMM yy"))?:"To date",fontSize=11.sp)}
                 if(fromDate!=null||toDate!=null) TextButton(onClick={fromDate=null;toDate=null}){Text("Clear",fontSize=11.sp)}
             }
-            if(fromDate!=null&&toDate!=null&&toDate!!.isBefore(fromDate!!)) Text("End date must be on or after the start date.",color=Color(0xFFB45E52),fontSize=11.sp,modifier=Modifier.padding(horizontal=20.dp,vertical=4.dp))
+            if(fromDate!=null&&toDate!=null&&toDate!!.isBefore(fromDate!!)) Text("End date must be on or after the start date.",color=Color(0xFFFF9B91),fontSize=11.sp,modifier=Modifier.padding(horizontal=20.dp,vertical=4.dp))
             LazyColumn(contentPadding=PaddingValues(horizontal=18.dp,vertical=4.dp)){
                 items(shown,key={it.id}){t->
                     var dx by remember{mutableFloatStateOf(0f)}
@@ -508,7 +508,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             Text("COLOUR",fontSize=10.sp,color=Muted,fontWeight=FontWeight.SemiBold)
             Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){palette.forEach{c->Box(Modifier.size(27.dp).clip(CircleShape).background(Color(c)).clickable{color=c},contentAlignment=Alignment.Center){if(c==color)Icon(Icons.Default.Check,null,tint=Color.White)}}}
         }
-    },confirmButton={TextButton(onClick={if(name.isNotBlank())onSave(RuvoCategory(id=existing?.id?:0L,name=name.trim(),icon=icon,color=color,isIncome=income))}){Text(if(existing==null)"Create" else "Save")}},dismissButton={Row(verticalAlignment=Alignment.CenterVertically){if(existing!=null)TextButton(onClick={confirmDelete=true}){Text("Delete",color=Color(0xFFB45E52))};TextButton(onClick=onDismiss){Text("Cancel")}}})
+    },confirmButton={TextButton(onClick={if(name.isNotBlank())onSave(RuvoCategory(id=existing?.id?:0L,name=name.trim(),icon=icon,color=color,isIncome=income))}){Text(if(existing==null)"Create" else "Save")}},dismissButton={Row(verticalAlignment=Alignment.CenterVertically){if(existing!=null)TextButton(onClick={confirmDelete=true}){Text("Delete",color=Color(0xFFFF9B91))};TextButton(onClick=onDismiss){Text("Cancel")}}})
     if(confirmDelete && existing!=null) AlertDialog(onDismissRequest={confirmDelete=false},title={Text("Delete category?")},text={Text("Existing transactions will be moved to another category of the same type.")},confirmButton={TextButton(onClick={onDelete(existing)}){Text("Delete")}},dismissButton={TextButton(onClick={confirmDelete=false}){Text("Cancel")}})
 }
 
@@ -516,12 +516,12 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     var first by remember{mutableStateOf("")}
     var second by remember{mutableStateOf("")}
     var error by remember{mutableStateOf(false)}
-    AlertDialog(onDismissRequest=onDismiss,title={Text("Set app PIN")},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){Text("Choose a 4–6 digit PIN. It stays on this device.",fontSize=12.sp,color=Muted);OutlinedTextField(first,{first=it.filter(Char::isDigit).take(6)},label={Text("New PIN")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),singleLine=true);OutlinedTextField(second,{second=it.filter(Char::isDigit).take(6)},label={Text("Confirm PIN")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),singleLine=true);if(error)Text("PINs must match and contain 4–6 digits.",color=Color(0xFFB45E52),fontSize=11.sp)}},confirmButton={TextButton(onClick={if(first.length in 4..6 && first==second)onSave(first) else error=true}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
+    AlertDialog(onDismissRequest=onDismiss,title={Text("Set app PIN")},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){Text("Choose a 4–6 digit PIN. It stays on this device.",fontSize=12.sp,color=Muted);OutlinedTextField(first,{first=it.filter(Char::isDigit).take(6)},label={Text("New PIN")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),singleLine=true);OutlinedTextField(second,{second=it.filter(Char::isDigit).take(6)},label={Text("Confirm PIN")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),singleLine=true);if(error)Text("PINs must match and contain 4–6 digits.",color=Color(0xFFFF9B91),fontSize=11.sp)}},confirmButton={TextButton(onClick={if(first.length in 4..6 && first==second)onSave(first) else error=true}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
 }
 @Composable private fun BudgetDialog(current:String,onSave:(String)->Unit,onDismiss:()->Unit){
     var value by remember{mutableStateOf(current)}
     var error by remember{mutableStateOf(false)}
-    AlertDialog(onDismissRequest=onDismiss,title={Text("Monthly budget")},text={Column(verticalArrangement=Arrangement.spacedBy(6.dp)){OutlinedTextField(value,{value=it;error=false},label={Text("Budget in ₹")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),isError=error,singleLine=true);if(error)Text("Enter a valid positive amount.",color=Color(0xFFB45E52),fontSize=11.sp)}},confirmButton={TextButton(onClick={if(parsePaise(value)!=null)onSave(value) else error=true}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
+    AlertDialog(onDismissRequest=onDismiss,title={Text("Monthly budget")},text={Column(verticalArrangement=Arrangement.spacedBy(6.dp)){OutlinedTextField(value,{value=it;error=false},label={Text("Budget in ₹")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),isError=error,singleLine=true);if(error)Text("Enter a valid positive amount.",color=Color(0xFFFF9B91),fontSize=11.sp)}},confirmButton={TextButton(onClick={if(parsePaise(value)!=null)onSave(value) else error=true}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
 }
 @Composable private fun More(cats:List<RuvoCategory>,onAdd:()->Unit,onBudget:()->Unit,budget:String,onEditCategory:(RuvoCategory)->Unit,pinEnabled:Boolean,onSetPin:()->Unit,onDisablePin:()->Unit){
     val context=androidx.compose.ui.platform.LocalContext.current
