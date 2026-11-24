@@ -66,7 +66,6 @@ import java.security.MessageDigest
 
 private val Forest = Color(0xFF173F32)
 private val Sage = Color(0xFFA9C6A5)
-private val Ivory = Color(0xFFF3F1E9)
 private val Muted = Color(0xFFA9B9AF)
 private val Night = Color(0xFF0B1210)
 private val NightSurface = Color(0xFF151F1B)
@@ -266,7 +265,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                     Text(if(current>budget) "Over budget" else "Remaining",color=Muted,fontSize=12.sp)
                     Text(if(current>budget) cash(current-budget) else cash(budget-current),fontWeight=FontWeight.SemiBold,color=if(current>budget) Color(0xFFB45E52) else MaterialTheme.colorScheme.onSurface)
                 }
-                Spacer(Modifier.height(9.dp));Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(Color(0xFF34453B))){Box(Modifier.fillMaxWidth(p).fillMaxHeight().background(if(p>=1)Color(0xFFB45E52) else Forest))}
+                Spacer(Modifier.height(9.dp));Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(Color(0xFF34453B))){Box(Modifier.fillMaxWidth(p).fillMaxHeight().background(if(p>=1)Color(0xFFB45E52) else Mint))}
                 Text((p*100).toInt().toString()+"% used",fontSize=10.sp,color=Muted,modifier=Modifier.padding(top=6.dp))
             }
         }
@@ -347,10 +346,10 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())){
         Heading("Calendar","Your spending, day by day.")
         Row(Modifier.fillMaxWidth().padding(horizontal=20.dp),horizontalArrangement=Arrangement.SpaceBetween){
-            Column { Text("Monthly spending",fontSize=10.sp,color=Muted);Text(cash(monthExpense),fontSize=21.sp,fontWeight=FontWeight.SemiBold,color=Forest) }
+            Column { Text("Monthly spending",fontSize=10.sp,color=Muted);Text(cash(monthExpense),fontSize=21.sp,fontWeight=FontWeight.SemiBold,color=MaterialTheme.colorScheme.primary) }
             Column(horizontalAlignment=Alignment.End) { Text("Daily average",fontSize=10.sp,color=Muted);Text(cash(monthAverage),fontSize=16.sp,fontWeight=FontWeight.SemiBold) }
         }
-        Row(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("Income  ${cash(monthIncome)}",fontSize=11.sp,color=Forest);Text("Net  ${cash(monthIncome-monthExpense)}",fontSize=11.sp,color=if(monthIncome>=monthExpense)Forest else Color(0xFFB45E52))}
+        Row(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("Income  ${cash(monthIncome)}",fontSize=11.sp,color=MaterialTheme.colorScheme.primary);Text("Net  ${cash(monthIncome-monthExpense)}",fontSize=11.sp,color=if(monthIncome>=monthExpense)Forest else Color(0xFFB45E52))}
         Column(Modifier.padding(horizontal=18.dp).animateContentSize().pointerInput(month){detectHorizontalDragGestures(onHorizontalDrag={_,dx->monthDrag+=dx},onDragEnd={if(kotlin.math.abs(monthDrag)>60f)haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);if(monthDrag < -60f){month=month.plusMonths(1);selected=month.atDay(1)}else if(monthDrag > 60f){month=month.minusMonths(1);selected=month.atDay(1)};monthDrag=0f})}.glass(RoundedCornerShape(25.dp)).padding(15.dp)){
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
                 IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);month=month.minusMonths(1);selected=month.atDay(1)}){Icon(Icons.Default.ChevronLeft,null)}
@@ -377,8 +376,8 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         }
         Column(Modifier.padding(18.dp).glass(RoundedCornerShape(22.dp)).padding(15.dp)){
             Text(selected.format(DateTimeFormatter.ofPattern("EEEE, d MMMM")),fontSize=12.sp,color=Muted)
-            Text(cash(spent(chosen)),fontSize=26.sp,fontWeight=FontWeight.SemiBold,color=Forest)
-            if(selectedIncome>0) Text("Income  +${cash(selectedIncome)}",fontSize=11.sp,color=Forest)
+            Text(cash(spent(chosen)),fontSize=26.sp,fontWeight=FontWeight.SemiBold,color=MaterialTheme.colorScheme.primary)
+            if(selectedIncome>0) Text("Income  +${cash(selectedIncome)}",fontSize=11.sp,color=MaterialTheme.colorScheme.primary)
             if(chosen.isEmpty()) Empty("Nothing recorded on this day.") else chosen.forEach{TransactionLine(it,cats){onEdit(it)}}
         }
     }
@@ -419,7 +418,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                     var dx by remember{mutableFloatStateOf(0f)}
                     val density = androidx.compose.ui.platform.LocalDensity.current
                     val swipeOffset by animateDpAsState(with(density) { dx.toDp() }, animationSpec=spring(dampingRatio=0.72f, stiffness=420f), label="swipe-row")
-                    Row(Modifier.fillMaxWidth().offset(x=swipeOffset).clip(RoundedCornerShape(14.dp)).glass(RoundedCornerShape(14.dp)).pointerInput(t.id){detectHorizontalDragGestures(onHorizontalDrag={_,d->dx=(dx+d).coerceIn(-92f,92f)},onDragEnd={if(dx < -55){haptic.performHapticFeedback(HapticFeedbackType.LongPress);pending=t}else if(dx>55){haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);onEdit(t)};dx=0f})}.clickable{haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);onEdit(t)}.padding(13.dp),verticalAlignment=Alignment.CenterVertically){
+                    Row(Modifier.fillMaxWidth().offset(x=swipeOffset).clip(RoundedCornerShape(14.dp)).glass(RoundedCornerShape(14.dp)).pointerInput(t.id){detectHorizontalDragGestures(onHorizontalDrag={_,d->dx=(dx+d).coerceIn(-92f,92f)},onDragEnd={if(dx < -55){haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);pending=t}else if(dx>55){haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);onEdit(t)};dx=0f})}.clickable{haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);onEdit(t)}.padding(13.dp),verticalAlignment=Alignment.CenterVertically){
                         Column(Modifier.weight(1f)){Text(cats.find{it.id==t.categoryId}?.name?:"Entry",fontSize=13.sp,fontWeight=FontWeight.Medium);Text(t.note.ifBlank{"Tap to edit"},fontSize=10.sp,color=Muted)}
                         Text((if(t.type=="INCOME")"+" else "−")+cash(t.amountPaise),fontSize=13.sp,fontWeight=FontWeight.SemiBold)
                     }
