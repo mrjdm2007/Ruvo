@@ -63,8 +63,9 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     var editing by remember { mutableStateOf<RuvoTransaction?>(null) }
     var categoryDialog by remember { mutableStateOf(false) }
     var budgetDialog by remember { mutableStateOf(false) }
-    var budget by remember { mutableStateOf("15000") }
-    var dark by remember { mutableStateOf(false) }
+    val prefs = remember { androidx.compose.ui.platform.LocalContext.current.getSharedPreferences("ruvo_preferences", 0) }
+    var budget by remember { mutableStateOf(prefs.getString("monthly_budget", "15000") ?: "15000") }
+    var dark by remember { mutableStateOf(prefs.getBoolean("dark_mode", false)) }
     var search by remember { mutableStateOf("") }
     val colors=if(dark) darkColorScheme(primary=Sage,background=Color(0xFF111A16),surface=Color(0xFF1C2821)) else lightColorScheme(primary=Forest,background=Ivory,surface=Color.White)
     MaterialTheme(colorScheme=colors) {
@@ -89,7 +90,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         }
         if(dialog) EntryDialog(editing,cats,{dialog=false;editing=null},{vm.save(it);dialog=false;editing=null},{categoryDialog=true})
         if(categoryDialog) CategoryDialog({categoryDialog=false},{n,i,c,inc->vm.addCategory(n,i,c,inc);categoryDialog=false})
-        if(budgetDialog) BudgetDialog(budget,{budget=it;budgetDialog=false},{budgetDialog=false})
+        if(budgetDialog) BudgetDialog(budget,{budget=it;prefs.edit().putString("monthly_budget",it).apply();budgetDialog=false},{budgetDialog=false})
     }
 }
 
