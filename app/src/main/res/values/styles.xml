@@ -1,9 +1,11 @@
 <resources>
-    <style name="Theme.Ruvo" parent="@android:style/Theme.Material.Light.NoActionBar">
+    <style name="Theme.Ruvo" parent="@android:style/Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:statusBarColor">#F3F1E9</item>
-        <item name="android:navigationBarColor">#F3F1E9</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">#0B1210</item>
+        <item name="android:navigationBarColor">#0B1210</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
         <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:forceDarkAllowed">false</item>
     </style>
 </resources>
