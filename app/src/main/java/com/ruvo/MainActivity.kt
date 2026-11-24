@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -71,7 +70,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     MaterialTheme(colorScheme=colors) {
         Scaffold(containerColor=colors.background, bottomBar={
             NavigationBar(containerColor=colors.surface) {
-                val icons=listOf(Icons.Default.SpaceDashboard,Icons.Default.CalendarMonth,Icons.AutoMirrored.Filled.ReceiptLong,Icons.Default.Tune)
+                val icons=listOf(Icons.Default.SpaceDashboard,Icons.Default.CalendarMonth,Icons.Default.ReceiptLong,Icons.Default.Tune)
                 listOf("Home","Calendar","History","More").forEachIndexed { i,s ->
                     NavigationBarItem(selected=page==i,onClick={page=i},icon={Icon(icons[i],null)},label={Text(s,fontSize=10.sp)})
                 }
