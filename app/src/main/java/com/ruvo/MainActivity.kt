@@ -10,6 +10,12 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,9 +35,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Offset
+import androidx.compose.ui.graphics.Size
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -129,10 +140,10 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                 }
             }
         }, floatingActionButton={
-            FloatingActionButton(onClick={editing=null;dialog=true},containerColor=Forest,contentColor=Color.White,shape=RoundedCornerShape(20.dp)){Icon(Icons.Default.Add,null)}
+            FloatingActionButton(onClick={androidx.compose.ui.platform.LocalHapticFeedback.current.performHapticFeedback(HapticFeedbackType.LongPress);editing=null;dialog=true},containerColor=Forest,contentColor=Color.White,shape=RoundedCornerShape(20.dp)){Icon(Icons.Default.Add,null)}
         }) { padding ->
             Box(Modifier.fillMaxSize().padding(padding)) {
-                AnimatedContent(targetState=page,label="page-transition") { activePage ->
+                AnimatedContent(targetState=page,transitionSpec={fadeIn(tween(220))+slideInHorizontally(initialOffsetX={it/24}) togetherWith fadeOut(tween(140))},label="page-transition") { activePage ->
                     when(activePage) {
                         0 -> Home(rows,cats,parsePaise(budget)?:1500000L,onBudget={budgetDialog=true},onEdit={editing=it;dialog=true})
                         1 -> CalendarPage(rows,cats,onEdit={editing=it;dialog=true})
@@ -184,6 +195,29 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                 }
             }
         }
+        item { Section("Spending analytics","This month at a glance") }
+        item {
+            val income=thisMonth.filter{it.type=="INCOME"}.sumOf{it.amountPaise}
+            val expense=current
+            val days=(1..now.dayOfMonth).map{d->spent(rows.filter{between(it,now.withDayOfMonth(d),now.withDayOfMonth(d))})}
+            val peak=days.maxOrNull()?:0L
+            val peakDay=(days.indexOf(peak)+1).coerceAtLeast(1)
+            val top=cats.filter{!it.isIncome}.map{c->c to thisMonth.filter{it.type=="EXPENSE"&&it.categoryId==c.id}.sumOf{it.amountPaise}}.maxByOrNull{it.second}
+            Column(Modifier.padding(horizontal=18.dp).glass(RoundedCornerShape(22.dp)).padding(16.dp),verticalArrangement=Arrangement.spacedBy(13.dp)){
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
+                    Column { Text("Income",fontSize=10.sp,color=Muted);Text(cash(income),fontSize=16.sp,fontWeight=FontWeight.SemiBold,color=Forest) }
+                    Column(horizontalAlignment=Alignment.End) { Text("Expenses",fontSize=10.sp,color=Muted);Text(cash(expense),fontSize=16.sp,fontWeight=FontWeight.SemiBold) }
+                }
+                HorizontalDivider(color=Muted.copy(alpha=.18f))
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
+                    Column { Text("Highest spending day",fontSize=10.sp,color=Muted);Text(if(peak>0) "${peakDay} ${now.month.getDisplayName(java.time.format.TextStyle.SHORT,Locale.ENGLISH)}" else "—",fontSize=14.sp,fontWeight=FontWeight.SemiBold) }
+                    Column(horizontalAlignment=Alignment.End) { Text("Net cash flow",fontSize=10.sp,color=Muted);Text(cash(income-expense),fontSize=14.sp,fontWeight=FontWeight.SemiBold,color=if(income>=expense)Forest else Color(0xFFB45E52)) }
+                }
+                Text("Daily spending trend",fontSize=12.sp,fontWeight=FontWeight.Medium)
+                DailySpendChart(days)
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text("1 ${now.month.getDisplayName(java.time.format.TextStyle.SHORT,Locale.ENGLISH)}",fontSize=9.sp,color=Muted);Text("Today",fontSize=9.sp,color=Muted)}
+            }
+        }
         item { Section("Category breakdown","This month") }
         item {
             val grouped=thisMonth.filter{it.type=="EXPENSE"}.groupBy{it.categoryId}.mapValues{it.value.sumOf{t->t.amountPaise}}.entries.sortedByDescending{it.value}.take(6)
@@ -211,6 +245,23 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                 Text((p*100).toInt().toString()+"% used",fontSize=10.sp,color=Muted,modifier=Modifier.padding(top=6.dp))
             }
         }
+        item { Section("Smart insights","Patterns from your local data") }
+        item {
+            val top=cats.filter{!it.isIncome}.map{c->c to thisMonth.filter{it.type=="EXPENSE"&&it.categoryId==c.id}.sumOf{it.amountPaise}}.maxByOrNull{it.second}
+            val income=thisMonth.filter{it.type=="INCOME"}.sumOf{it.amountPaise}
+            val yesterday=now.minusDays(1)
+            val todaySpend=spent(rows.filter{between(it,now,now)})
+            val previousMonthTotal=spent(rows.filter{between(it,now.minusMonths(1).withDayOfMonth(1),now.withDayOfMonth(1).minusDays(1))})
+            val delta=current-previousMonthTotal
+            Column(Modifier.padding(horizontal=18.dp).glass(RoundedCornerShape(22.dp)).padding(15.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
+                InsightLine(Icons.Default.AutoAwesome,when{current==0L->"Add a few expenses to unlock spending insights.";previousMonthTotal==0L->"You have spent ${cash(current)} so far this month.";delta>0->"Spending is ${cash(delta)} higher than the previous full month.";delta<0->"Spending is ${cash(-delta)} lower than the previous full month.";else->"Your spending matches the previous month."})
+                if(top!=null&&top.second>0) InsightLine(Icons.Default.Leaderboard,"${top.first.name} is your highest-spending category at ${cash(top.second)}.")
+                if(todaySpend>0) InsightLine(Icons.Default.Today,"You have spent ${cash(todaySpend)} today.")
+                if(budget>0 && current>budget) InsightLine(Icons.Default.Warning,"You are ${cash(current-budget)} over your monthly budget.")
+                else if(budget>0 && current.toDouble()/budget>=.75) InsightLine(Icons.Default.NotificationsActive,"You have used ${(current.toDouble()/budget*100).toInt()}% of your monthly budget.")
+                if(income>0) InsightLine(Icons.Default.AccountBalanceWallet,"Your recorded income this month is ${cash(income)}.")
+            }
+        }
         item { Section("Recent activity","Latest entries") }
         item {
             Column(Modifier.padding(horizontal=18.dp).glass(RoundedCornerShape(22.dp)).padding(horizontal=14.dp)){
@@ -218,6 +269,24 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                 rows.take(5).forEach{TransactionLine(it,cats,onClick={onEdit(it)})}
             }
         }
+    }
+}
+@Composable private fun DailySpendChart(values:List<Long>){
+    Canvas(Modifier.fillMaxWidth().height(104.dp)){
+        if(values.isEmpty()) return@Canvas
+        val max=values.maxOrNull()?.coerceAtLeast(1L)?:1L
+        val gap=3.dp.toPx()
+        val barWidth=((size.width-gap*(values.size-1))/values.size).coerceAtLeast(1f)
+        values.forEachIndexed{index,value->
+            val height=(value.toFloat()/max*size.height*.88f).coerceAtLeast(if(value>0)3.dp.toPx() else 1.dp.toPx())
+            drawRoundRect(color=if(value==max&&value>0) Forest else Sage.copy(alpha=if(value>0).9f else .22f),topLeft=Offset(index*(barWidth+gap),size.height-height),size=Size(barWidth,height),cornerRadius=CornerRadius(4.dp.toPx(),4.dp.toPx()))
+        }
+    }
+}
+@Composable private fun InsightLine(icon:ImageVector,message:String){
+    Row(verticalAlignment=Alignment.Top,horizontalArrangement=Arrangement.spacedBy(10.dp)){
+        Box(Modifier.size(30.dp).clip(CircleShape).background(Sage.copy(alpha=.24f)),contentAlignment=Alignment.Center){Icon(icon,null,tint=Forest,modifier=Modifier.size(16.dp))}
+        Text(message,fontSize=12.sp,color=MaterialTheme.colorScheme.onSurface,modifier=Modifier.weight(1f))
     }
 }
 @Composable private fun Section(title:String,sub:String){Column(Modifier.padding(horizontal=22.dp)){Text(title,fontWeight=FontWeight.SemiBold,fontSize=17.sp);Text(sub,fontSize=11.sp,color=Muted)}}
@@ -237,13 +306,24 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     val daily=(1..month.lengthOfMonth()).associateWith{d->spent(rows.filter{between(it,month.atDay(d),month.atDay(d))})}
     val maxSpend=maxOf(1L,daily.values.maxOrNull()?:1L)
     val chosen=rows.filter{between(it,selected,selected)}
+    val monthRows=rows.filter{between(it,month.atDay(1),month.atEndOfMonth())}
+    val monthExpense=spent(monthRows)
+    val monthIncome=monthRows.filter{it.type=="INCOME"}.sumOf{it.amountPaise}
+    val monthAverage=if(month.lengthOfMonth()>0)monthExpense/month.lengthOfMonth() else 0L
+    val selectedIncome=chosen.filter{it.type=="INCOME"}.sumOf{it.amountPaise}
+    val haptic=LocalHapticFeedback.current
     Column(Modifier.fillMaxSize()){
         Heading("Calendar","Your spending, day by day.")
+        Row(Modifier.fillMaxWidth().padding(horizontal=20.dp),horizontalArrangement=Arrangement.SpaceBetween){
+            Column { Text("Monthly spending",fontSize=10.sp,color=Muted);Text(cash(monthExpense),fontSize=21.sp,fontWeight=FontWeight.SemiBold,color=Forest) }
+            Column(horizontalAlignment=Alignment.End) { Text("Daily average",fontSize=10.sp,color=Muted);Text(cash(monthAverage),fontSize=16.sp,fontWeight=FontWeight.SemiBold) }
+        }
+        Row(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("Income  ${cash(monthIncome)}",fontSize=11.sp,color=Forest);Text("Net  ${cash(monthIncome-monthExpense)}",fontSize=11.sp,color=if(monthIncome>=monthExpense)Forest else Color(0xFFB45E52))}
         Column(Modifier.padding(horizontal=18.dp).animateContentSize().pointerInput(month){detectHorizontalDragGestures(onHorizontalDrag={_,dx->monthDrag+=dx},onDragEnd={if(monthDrag < -60f){month=month.plusMonths(1);selected=month.atDay(1)}else if(monthDrag > 60f){month=month.minusMonths(1);selected=month.atDay(1)};monthDrag=0f})}.glass(RoundedCornerShape(25.dp)).padding(15.dp)){
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
-                IconButton(onClick={month=month.minusMonths(1);selected=month.atDay(1)}){Icon(Icons.Default.ChevronLeft,null)}
+                IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);month=month.minusMonths(1);selected=month.atDay(1)}){Icon(Icons.Default.ChevronLeft,null)}
                 Text(month.format(DateTimeFormatter.ofPattern("MMMM yyyy")),fontWeight=FontWeight.SemiBold,fontSize=17.sp)
-                IconButton(onClick={month=month.plusMonths(1);selected=month.atDay(1)}){Icon(Icons.Default.ChevronRight,null)}
+                IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);month=month.plusMonths(1);selected=month.atDay(1)}){Icon(Icons.Default.ChevronRight,null)}
             }
             Row(Modifier.fillMaxWidth()){listOf("M","T","W","T","F","S","S").forEach{Box(Modifier.weight(1f),contentAlignment=Alignment.Center){Text(it,fontSize=10.sp,color=Muted)}}}
             val offset=month.atDay(1).dayOfWeek.value-1
@@ -256,7 +336,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                             val ratio=spend.toFloat()/maxSpend
                             val bg=when{spend==0L->Color(0xFFF0F1EB);ratio<.25f->Color(0xFFDCE8D8);ratio<.5f->Color(0xFFB5CEB0);ratio<.75f->Color(0xFF7FA17E);else->Forest}
                             val date=month.atDay(d)
-                            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(9.dp)).background(if(date==selected)Forest else bg).clickable{selected=date},contentAlignment=Alignment.Center){Text(d.toString(),fontSize=12.sp,color=if(date==selected||(spend>0&&ratio>=.75f))Color.White else Color(0xFF202923))}
+                            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(9.dp)).background(if(date==selected)Forest else bg).clickable{haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);selected=date},contentAlignment=Alignment.Center){Text(d.toString(),fontSize=12.sp,color=if(date==selected||(spend>0&&ratio>=.75f))Color.White else Color(0xFF202923))}
                         }
                     }
                 }
@@ -266,6 +346,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         Column(Modifier.padding(18.dp).glass(RoundedCornerShape(22.dp)).padding(15.dp)){
             Text(selected.format(DateTimeFormatter.ofPattern("EEEE, d MMMM")),fontSize=12.sp,color=Muted)
             Text(cash(spent(chosen)),fontSize=26.sp,fontWeight=FontWeight.SemiBold,color=Forest)
+            if(selectedIncome>0) Text("Income  +${cash(selectedIncome)}",fontSize=11.sp,color=Forest)
             if(chosen.isEmpty()) Empty("Nothing recorded on this day.") else chosen.forEach{TransactionLine(it,cats){onEdit(it)}}
         }
     }
@@ -273,6 +354,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
 
 @Composable private fun History(rows:List<RuvoTransaction>,cats:List<RuvoCategory>,query:String,onQuery:(String)->Unit,onEdit:(RuvoTransaction)->Unit,onDelete:(RuvoTransaction)->Unit,onRestore:(RuvoTransaction)->Unit){
     val snackbar = remember { SnackbarHostState() }
+    val haptic = LocalHapticFeedback.current
     var deleted by remember { mutableStateOf<RuvoTransaction?>(null) }
     var filter by remember{mutableStateOf("All")}
     var fromDate by remember{mutableStateOf<LocalDate?>(null)}
@@ -304,7 +386,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                     var dx by remember{mutableFloatStateOf(0f)}
                     val density = androidx.compose.ui.platform.LocalDensity.current
                     val swipeOffset by animateDpAsState(with(density) { dx.toDp() }, animationSpec=spring(dampingRatio=0.72f, stiffness=420f), label="swipe-row")
-                    Row(Modifier.fillMaxWidth().offset(x=swipeOffset).clip(RoundedCornerShape(14.dp)).glass(RoundedCornerShape(14.dp)).pointerInput(t.id){detectHorizontalDragGestures(onHorizontalDrag={_,d->dx=(dx+d).coerceIn(-92f,92f)},onDragEnd={if(dx < -55)pending=t else if(dx>55)onEdit(t);dx=0f})}.clickable{onEdit(t)}.padding(13.dp),verticalAlignment=Alignment.CenterVertically){
+                    Row(Modifier.fillMaxWidth().offset(x=swipeOffset).clip(RoundedCornerShape(14.dp)).glass(RoundedCornerShape(14.dp)).pointerInput(t.id){detectHorizontalDragGestures(onHorizontalDrag={_,d->dx=(dx+d).coerceIn(-92f,92f)},onDragEnd={if(dx < -55){haptic.performHapticFeedback(HapticFeedbackType.LongPress);pending=t}else if(dx>55){haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);onEdit(t)};dx=0f})}.clickable{haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);onEdit(t)}.padding(13.dp),verticalAlignment=Alignment.CenterVertically){
                         Column(Modifier.weight(1f)){Text(cats.find{it.id==t.categoryId}?.name?:"Entry",fontSize=13.sp,fontWeight=FontWeight.Medium);Text(t.note.ifBlank{"Tap to edit"},fontSize=10.sp,color=Muted)}
                         Text((if(t.type=="INCOME")"+" else "−")+cash(t.amountPaise),fontSize=13.sp,fontWeight=FontWeight.SemiBold)
                     }
