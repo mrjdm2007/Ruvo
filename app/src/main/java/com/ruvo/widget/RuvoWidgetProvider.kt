@@ -68,7 +68,12 @@ class RuvoWidgetProvider : AppWidgetProvider() {
     }
 
     private object NumberFormatCompat {
-        fun format(paise: Long): String = String.format(Locale("en", "IN"), "₹%,.0f", paise / 100.0)
+        fun format(paise: Long): String {
+            val formatter = java.text.NumberFormat.getCurrencyInstance(Locale("en", "IN"))
+            formatter.maximumFractionDigits = 2
+            formatter.minimumFractionDigits = if (paise % 100L == 0L) 0 else 2
+            return formatter.format(paise / 100.0)
+        }
     }
 
     companion object {
