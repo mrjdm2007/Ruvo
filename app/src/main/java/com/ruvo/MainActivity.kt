@@ -132,7 +132,6 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     val haptic = LocalHapticFeedback.current
     val prefs = remember(context) { context.getSharedPreferences("ruvo_preferences", 0) }
     var budget by remember { mutableStateOf(prefs.getString("monthly_budget", "15000") ?: "15000") }
-    val dark = true
     var pinHash by remember { mutableStateOf(prefs.getString("app_pin_hash", null)) }
     var locked by remember { mutableStateOf(pinHash != null) }
     var pinEntry by remember { mutableStateOf("") }
@@ -182,7 +181,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         if(categoryDialog) CategoryDialog(editingCategory,{categoryDialog=false;editingCategory=null},{item->if(item.id==0L) vm.addCategory(item.name,item.icon,item.color,item.isIncome) else vm.updateCategory(item);categoryDialog=false;editingCategory=null},{item->vm.deleteCategory(item);categoryDialog=false;editingCategory=null})
         if(budgetDialog) BudgetDialog(budget,{budget=it;prefs.edit().putString("monthly_budget",it).apply();budgetDialog=false},{budgetDialog=false})
         if(pinSetup) PinSetupDialog({pinSetup=false},{pin->pinHash=pinDigest(pin);prefs.edit().putString("app_pin_hash",pinHash).apply();locked=false;pinSetup=false})
-        if(locked) AlertDialog(onDismissRequest={},title={Text("RUVO is locked")},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){Text("Enter your app PIN to continue.",fontSize=12.sp,color=Muted);OutlinedTextField(pinEntry,{pinEntry=it.filter(Char::isDigit).take(6);pinError=false},label={Text("PIN")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),singleLine=true,isError=pinError);if(pinError)Text("Incorrect PIN",color=Color(0xFFB45E52),fontSize=11.sp)}},confirmButton={TextButton(onClick={if(pinHash!=null && pinDigest(pinEntry)==pinHash){locked=false;pinEntry="";pinError=false}else pinError=true}){Text("Unlock")}})
+        if(locked) AlertDialog(onDismissRequest={},title={Text("RUVO is locked")},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){Text("Enter your app PIN to continue.",fontSize=12.sp,color=Muted);OutlinedTextField(pinEntry,{pinEntry=it.filter(Char::isDigit).take(6);pinError=false},label={Text("PIN")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.NumberPassword),singleLine=true,isError=pinError);if(pinError)Text("Incorrect PIN",color=Color(0xFFFF9B91),fontSize=11.sp)}},confirmButton={TextButton(onClick={if(pinHash!=null && pinDigest(pinEntry)==pinHash){locked=false;pinEntry="";pinError=false}else pinError=true}){Text("Unlock")}})
     }
 }
 
@@ -212,7 +211,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text("TOTAL SPENT",color=Sage,fontSize=10.sp,letterSpacing=1.5.sp);Icon(Icons.Default.Wallet,null,tint=Sage)}
                 AnimatedContent(spent(shown),label="amount"){Text(cash(it),fontSize=34.sp,color=Color.White,fontWeight=FontWeight.SemiBold)}
                 Spacer(Modifier.height(16.dp))
-                Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){listOf("Day","Week","Month","Year").forEach{v->FilterChip(selected=range==v,onClick={range=v},label={Text(v,fontSize=11.sp)},colors=FilterChipDefaults.filterChipColors(selectedContainerColor=Color(0xFFDAE9D3),selectedLabelColor=Forest))}}
+                Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){listOf("Day","Week","Month","Year").forEach{v->FilterChip(selected=range==v,onClick={range=v},label={Text(v,fontSize=11.sp)},colors=FilterChipDefaults.filterChipColors(selectedContainerColor=Color(0xFFD4F0DD),selectedLabelColor=Color(0xFF10291B)))}}
                 Spacer(Modifier.height(15.dp))
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
                     Column{Text("MONTHLY DAILY AVG.",color=Sage,fontSize=9.sp);Text(cash(average),color=Color.White,fontSize=18.sp,fontWeight=FontWeight.SemiBold)}
@@ -258,7 +257,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                 }
             }
         }
-        item { Row(Modifier.fillMaxWidth().padding(horizontal=22.dp),horizontalArrangement=Arrangement.SpaceBetween){Section("Monthly budget", "Your spending limit");Text("Edit",color=Forest,fontSize=12.sp,modifier=Modifier.clickable{onBudget()}.padding(5.dp))} }
+        item { Row(Modifier.fillMaxWidth().padding(horizontal=22.dp),horizontalArrangement=Arrangement.SpaceBetween){Section("Monthly budget", "Your spending limit");Text("Edit",color=MaterialTheme.colorScheme.primary,fontSize=12.sp,modifier=Modifier.clickable{onBudget()}.padding(5.dp))} }
         item {
             val pTarget=(current.toFloat()/budget.coerceAtLeast(1)).coerceIn(0f,1f)
             val p by animateFloatAsState(targetValue=pTarget,animationSpec=spring(dampingRatio=0.82f,stiffness=240f),label="budget-progress")
@@ -267,7 +266,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                     Text(if(current>budget) "Over budget" else "Remaining",color=Muted,fontSize=12.sp)
                     Text(if(current>budget) cash(current-budget) else cash(budget-current),fontWeight=FontWeight.SemiBold,color=if(current>budget) Color(0xFFB45E52) else MaterialTheme.colorScheme.onSurface)
                 }
-                Spacer(Modifier.height(9.dp));Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(Color(0xFFE6EAE3))){Box(Modifier.fillMaxWidth(p).fillMaxHeight().background(if(p>=1)Color(0xFFB45E52) else Forest))}
+                Spacer(Modifier.height(9.dp));Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(Color(0xFF34453B))){Box(Modifier.fillMaxWidth(p).fillMaxHeight().background(if(p>=1)Color(0xFFB45E52) else Forest))}
                 Text((p*100).toInt().toString()+"% used",fontSize=10.sp,color=Muted,modifier=Modifier.padding(top=6.dp))
             }
         }
@@ -310,7 +309,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         }
         animated.forEachIndexed{index,fraction->
             val height=(fraction*baseline*.82f).coerceAtLeast(if(values[index]>0)3.dp.toPx() else 1.dp.toPx())
-            val color=if(values[index]==max&&values[index]>0)Forest else Sage.copy(alpha=if(values[index]>0).92f else .22f)
+            val color=if(values[index]==max&&values[index]>0)Mint else Sage.copy(alpha=if(values[index]>0).92f else .22f)
             drawRoundRect(brush=Brush.verticalGradient(listOf(color.copy(alpha=.68f),color)),topLeft=Offset(index*(barWidth+gap),baseline-height),size=Size(barWidth,height),cornerRadius=CornerRadius(5.dp.toPx(),5.dp.toPx()))
         }
     }
@@ -325,9 +324,9 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
 @Composable private fun Empty(s:String){Text(s,color=Muted,fontSize=12.sp,modifier=Modifier.fillMaxWidth().padding(vertical=22.dp),textAlign=androidx.compose.ui.text.style.TextAlign.Center)}
 @Composable private fun TransactionLine(t:RuvoTransaction,cats:List<RuvoCategory>,onClick:()->Unit){
     Row(Modifier.fillMaxWidth().clickable{onClick()}.padding(vertical=12.dp),verticalAlignment=Alignment.CenterVertically){
-        Box(Modifier.size(38.dp).clip(CircleShape).background(Color(0xFFE8EEE5)),contentAlignment=Alignment.Center){Icon(categoryGlyph(cats.find{it.id==t.categoryId}?.icon),null,tint=Forest,modifier=Modifier.size(19.dp))}
+        Box(Modifier.size(38.dp).clip(CircleShape).background(NightElevated),contentAlignment=Alignment.Center){Icon(categoryGlyph(cats.find{it.id==t.categoryId}?.icon),null,tint=Mint,modifier=Modifier.size(19.dp))}
         Column(Modifier.weight(1f).padding(start=10.dp)){Text(cats.find{it.id==t.categoryId}?.name?:"Entry",fontSize=13.sp,fontWeight=FontWeight.Medium);Text(t.note.ifBlank{Instant.ofEpochMilli(t.timestamp).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("d MMM"))},fontSize=10.sp,color=Muted)}
-        Text((if(t.type=="INCOME")"+" else "−")+cash(t.amountPaise),fontSize=13.sp,fontWeight=FontWeight.SemiBold,color=if(t.type=="INCOME")Forest else MaterialTheme.colorScheme.onSurface)
+        Text((if(t.type=="INCOME")"+" else "−")+cash(t.amountPaise),fontSize=13.sp,fontWeight=FontWeight.SemiBold,color=if(t.type=="INCOME")Mint else MaterialTheme.colorScheme.onSurface)
     }
 }
 
@@ -367,14 +366,14 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                         if(d in 1..month.lengthOfMonth()){
                             val spend=daily[d]?:0L
                             val ratio=spend.toFloat()/maxSpend
-                            val bg=when{spend==0L->Color(0xFFF0F1EB);ratio<.25f->Color(0xFFDCE8D8);ratio<.5f->Color(0xFFB5CEB0);ratio<.75f->Color(0xFF7FA17E);else->Forest}
+                            val bg=when{spend==0L->Color(0xFF1B2922);ratio<.25f->Color(0xFF263B2F);ratio<.5f->Color(0xFF315642);ratio<.75f->Color(0xFF467B5A);else->Color(0xFF65A97A)}
                             val date=month.atDay(d)
-                            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(9.dp)).background(if(date==selected)Forest else bg).clickable{haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);selected=date},contentAlignment=Alignment.Center){Text(d.toString(),fontSize=12.sp,color=if(date==selected||(spend>0&&ratio>=.75f))Color.White else Color(0xFF202923))}
+                            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(9.dp)).background(if(date==selected)Mint else bg).clickable{haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);selected=date},contentAlignment=Alignment.Center){Text(d.toString(),fontSize=12.sp,color=if(date==selected)Color(0xFF082016) else Color(0xFFE6F0E9))}
                         }
                     }
                 }
             }
-            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Text("Less",fontSize=10.sp,color=Muted);Row(horizontalArrangement=Arrangement.spacedBy(4.dp)){listOf(Color(0xFFF0F1EB),Color(0xFFDCE8D8),Color(0xFFB5CEB0),Color(0xFF7FA17E),Forest).forEach{Box(Modifier.size(13.dp).clip(RoundedCornerShape(3.dp)).background(it))}};Text("More",fontSize=10.sp,color=Muted)}
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Text("Less",fontSize=10.sp,color=Muted);Row(horizontalArrangement=Arrangement.spacedBy(4.dp)){listOf(Color(0xFF1B2922),Color(0xFF263B2F),Color(0xFF315642),Color(0xFF467B5A),Color(0xFF65A97A)).forEach{Box(Modifier.size(13.dp).clip(RoundedCornerShape(3.dp)).background(it))}};Text("More",fontSize=10.sp,color=Muted)}
         }
         Column(Modifier.padding(18.dp).glass(RoundedCornerShape(22.dp)).padding(15.dp)){
             Text(selected.format(DateTimeFormatter.ofPattern("EEEE, d MMMM")),fontSize=12.sp,color=Muted)
