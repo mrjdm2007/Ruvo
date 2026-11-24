@@ -3,68 +3,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
-    android:padding="10dp">
-    <LinearLayout
+    android:padding="2dp">
+    <ImageView
+        android:id="@+id/widget_add"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center_vertical"
-        android:padding="4dp">
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-            <TextView
-                android:id="@+id/widget_brand"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:fontFamily="sans"
-                android:letterSpacing="0.08"
-                android:text="ruvo"
-                android:textColor="#E6F2E7"
-                android:textStyle="bold"
-                android:textSize="12sp"/>
-            <ImageView
-                android:id="@+id/widget_add"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:background="@drawable/widget_add_background"
-                android:padding="6dp"
-                android:src="@android:drawable/ic_input_add"
-                android:tint="#173F32"
-                android:contentDescription="Add expense"/>
-        </LinearLayout>
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="9dp"
-            android:text="SPENT TODAY"
-            android:textColor="#BFD9C1"
-            android:textSize="9sp"
-            android:letterSpacing="0.12"/>
-        <TextView
-            android:id="@+id/widget_amount"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
-            android:fontFamily="sans"
-            android:text="₹0"
-            android:textColor="#FFFFFF"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:maxLines="1"
-            android:ellipsize="end"/>
-        <TextView
-            android:id="@+id/widget_today"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="A little more clarity, every day."
-            android:textColor="#C5E3B8"
-            android:textSize="9sp"
-            android:maxLines="1"
-            android:ellipsize="end"/>
-    </LinearLayout>
+        android:background="@drawable/widget_add_background"
+        android:padding="12dp"
+        android:src="@drawable/widget_plus"
+        android:scaleType="fitCenter"
+        android:contentDescription="Add expense"/>
 </FrameLayout>
