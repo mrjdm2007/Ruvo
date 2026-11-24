@@ -203,7 +203,6 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             val days=(1..now.dayOfMonth).map{d->spent(rows.filter{between(it,now.withDayOfMonth(d),now.withDayOfMonth(d))})}
             val peak=days.maxOrNull()?:0L
             val peakDay=(days.indexOf(peak)+1).coerceAtLeast(1)
-            val top=cats.filter{!it.isIncome}.map{c->c to thisMonth.filter{it.type=="EXPENSE"&&it.categoryId==c.id}.sumOf{it.amountPaise}}.maxByOrNull{it.second}
             Column(Modifier.padding(horizontal=18.dp).glass(RoundedCornerShape(22.dp)).padding(16.dp),verticalArrangement=Arrangement.spacedBy(13.dp)){
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
                     Column { Text("Income",fontSize=10.sp,color=Muted);Text(cash(income),fontSize=16.sp,fontWeight=FontWeight.SemiBold,color=Forest) }
@@ -250,7 +249,6 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         item {
             val top=cats.filter{!it.isIncome}.map{c->c to thisMonth.filter{it.type=="EXPENSE"&&it.categoryId==c.id}.sumOf{it.amountPaise}}.maxByOrNull{it.second}
             val income=thisMonth.filter{it.type=="INCOME"}.sumOf{it.amountPaise}
-            val yesterday=now.minusDays(1)
             val todaySpend=spent(rows.filter{between(it,now,now)})
             val previousMonthTotal=previous
             val delta=current-previousMonthTotal
@@ -320,7 +318,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             Column(horizontalAlignment=Alignment.End) { Text("Daily average",fontSize=10.sp,color=Muted);Text(cash(monthAverage),fontSize=16.sp,fontWeight=FontWeight.SemiBold) }
         }
         Row(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("Income  ${cash(monthIncome)}",fontSize=11.sp,color=Forest);Text("Net  ${cash(monthIncome-monthExpense)}",fontSize=11.sp,color=if(monthIncome>=monthExpense)Forest else Color(0xFFB45E52))}
-        Column(Modifier.padding(horizontal=18.dp).animateContentSize().pointerInput(month){detectHorizontalDragGestures(onHorizontalDrag={_,dx->monthDrag+=dx},onDragEnd={if(monthDrag < -60f){month=month.plusMonths(1);selected=month.atDay(1)}else if(monthDrag > 60f){month=month.minusMonths(1);selected=month.atDay(1)};monthDrag=0f})}.glass(RoundedCornerShape(25.dp)).padding(15.dp)){
+        Column(Modifier.padding(horizontal=18.dp).animateContentSize().pointerInput(month){detectHorizontalDragGestures(onHorizontalDrag={_,dx->monthDrag+=dx},onDragEnd={if(kotlin.math.abs(monthDrag)>60f)haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);if(monthDrag < -60f){month=month.plusMonths(1);selected=month.atDay(1)}else if(monthDrag > 60f){month=month.minusMonths(1);selected=month.atDay(1)};monthDrag=0f})}.glass(RoundedCornerShape(25.dp)).padding(15.dp)){
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
                 IconButton(onClick={haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);month=month.minusMonths(1);selected=month.atDay(1)}){Icon(Icons.Default.ChevronLeft,null)}
                 Text(month.format(DateTimeFormatter.ofPattern("MMMM yyyy")),fontWeight=FontWeight.SemiBold,fontSize=17.sp)
