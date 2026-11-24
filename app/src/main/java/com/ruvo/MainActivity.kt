@@ -26,6 +26,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -456,14 +457,14 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             if(shown.isEmpty())Column(Modifier.fillMaxWidth().weight(1f),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center){
                 Icon(Icons.Default.SearchOff,null,tint=Muted,modifier=Modifier.size(34.dp));Text("No transactions found",fontSize=15.sp,fontWeight=FontWeight.Medium,modifier=Modifier.padding(top=10.dp));Text("Try changing your search or filters.",fontSize=11.sp,color=Muted,modifier=Modifier.padding(top=4.dp))
             }else LazyColumn(contentPadding=PaddingValues(horizontal=18.dp,vertical=7.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
-                items(shown,key={it.id}){t->
+                itemsIndexed(shown,key={_,t->t.id}){index,t->
                     var dx by remember(t.id){mutableFloatStateOf(0f)}
                     val density=androidx.compose.ui.platform.LocalDensity.current
                     val swipeOffset by animateDpAsState(with(density){dx.toDp()},animationSpec=spring(dampingRatio=.76f,stiffness=420f),label="history-swipe")
                     val currentDate=Instant.ofEpochMilli(t.timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
-                    val previousDate=shown.getOrNull(shown.indexOf(t)-1)?.timestamp?.let{Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()}
+                    val previousDate=if(sort=="Newest first"||sort=="Oldest first")shown.getOrNull(index-1)?.timestamp?.let{Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()}else null
                     Column(Modifier.fillMaxWidth()){
-                        if(currentDate!=previousDate)Text(currentDate.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy")),fontSize=10.sp,color=Muted,fontWeight=FontWeight.SemiBold,modifier=Modifier.padding(start=5.dp,top=7.dp,bottom=3.dp))
+                        if((sort=="Newest first"||sort=="Oldest first")&&currentDate!=previousDate)Text(currentDate.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy")),fontSize=10.sp,color=Muted,fontWeight=FontWeight.SemiBold,modifier=Modifier.padding(start=5.dp,top=7.dp,bottom=3.dp))
                         val category=cats.find{it.id==t.categoryId}
                         Row(Modifier.fillMaxWidth().offset(x=swipeOffset).clip(RoundedCornerShape(17.dp)).glass(RoundedCornerShape(17.dp)).pointerInput(t.id){detectHorizontalDragGestures(onHorizontalDrag={_,d->dx=(dx+d).coerceIn(-92f,92f)},onDragEnd={if(dx < -55){haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);pending=t}else if(dx>55){haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);onEdit(t)};dx=0f})}.clickable{haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);onEdit(t)}.padding(13.dp),verticalAlignment=Alignment.CenterVertically){
                             Box(Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(Color(category?.color?:0xFF548B69).copy(alpha=.17f)),contentAlignment=Alignment.Center){Icon(categoryGlyph(category?.icon),null,tint=Color(category?.color?:0xFF9EDDB7),modifier=Modifier.size(19.dp))}
