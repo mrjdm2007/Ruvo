@@ -46,19 +46,8 @@ class RuvoViewModel(app: Application) : AndroidViewModel(app) {
     fun updateCategory(item: RuvoCategory) = viewModelScope.launch {
         if (item.name.isNotBlank()) dao.updateCategory(item.copy(name = item.name.trim()))
     }
-    fun deleteCategory(item: RuvoCategory) = viewModelScope.launch {
-        val fallback = dao.categories().first().firstOrNull { it.id != item.id && it.isIncome == item.isIncome }
-        val replacementId = fallback?.id ?: dao.insertCategory(
-            RuvoCategory(
-                name = if (item.isIncome) "Other income" else "Other",
-                icon = "category",
-                color = 0xFF87958B,
-                isIncome = item.isIncome
-            )
-        )
-        dao.moveTransactionsToCategory(item.id, replacementId)
-        dao.deleteCategory(item)
-    }
+    fun deleteCategory(item: RuvoCategory) = viewModelScope.launch { dao.deleteCategorySafely(item) }
+
     fun category(id: Long, callback: (RuvoCategory?) -> Unit) = viewModelScope.launch { callback(dao.category(id)) }
 
     private fun refreshWidget() {
