@@ -61,7 +61,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     var page by remember { mutableIntStateOf(0) }
     var dialog by remember { mutableStateOf(quick) }
     var editing by remember { mutableStateOf<RuvoTransaction?>(null) }
-    var categoryDialog by remember { mutableStateOf(false) }
+    var categoryDialog by remember { mutableStateOf(false) }\n    var editingCategory by remember { mutableStateOf<RuvoCategory?>(null) }
     var budgetDialog by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = remember(context) { context.getSharedPreferences("ruvo_preferences", 0) }
@@ -85,12 +85,12 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                     0 -> Home(rows,cats,budget.toLongOrNull()?.times(100)?:1500000L,onBudget={budgetDialog=true},onEdit={editing=it;dialog=true})
                     1 -> CalendarPage(rows,cats,onEdit={editing=it;dialog=true})
                     2 -> History(rows,cats,search,{search=it},onEdit={editing=it;dialog=true},onDelete={vm.delete(it)})
-                    else -> More(cats,dark,{dark=it;prefs.edit().putBoolean("dark_mode",it).apply()},{categoryDialog=true},{budgetDialog=true},budget)
+                    else -> More(cats,dark,{dark=it;prefs.edit().putBoolean("dark_mode",it).apply()},{editingCategory=null;categoryDialog=true},{budgetDialog=true},budget,onEditCategory={editingCategory=it;categoryDialog=true})
                 }
             }
         }
         if(dialog) EntryDialog(editing,cats,{dialog=false;editing=null},{vm.save(it);dialog=false;editing=null},{categoryDialog=true})
-        if(categoryDialog) CategoryDialog({categoryDialog=false},{n,i,c,inc->vm.addCategory(n,i,c,inc);categoryDialog=false})
+        if(categoryDialog) CategoryDialog(editingCategory,{categoryDialog=false;editingCategory=null},{item->if(item.id==0L) vm.addCategory(item.name,item.icon,item.color,item.isIncome) else vm.updateCategory(item);categoryDialog=false;editingCategory=null})
         if(budgetDialog) BudgetDialog(budget,{budget=it;prefs.edit().putString("monthly_budget",it).apply();budgetDialog=false},{budgetDialog=false})
     }
 }
@@ -256,20 +256,20 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
 @Composable private fun CategoryDialog(onDismiss:()->Unit,onSave:(String,String,Long,Boolean)->Unit){
     var name by remember{mutableStateOf("")};var income by remember{mutableStateOf(false)}
     val palette=listOf(0xFF548B69,0xFFE3A35C,0xFF6F9DB8,0xFFB18AB8,0xFFC78C69,0xFF8A91A8)
-    var color by remember{mutableLongStateOf(palette[0])}
-    AlertDialog(onDismissRequest=onDismiss,title={Text("New category")},text={
+    var color by remember(existing){mutableLongStateOf(existing?.color?:palette[0])}
+    AlertDialog(onDismissRequest=onDismiss,title={Text(if(existing==null)"New category" else "Edit category")},text={
         Column(verticalArrangement=Arrangement.spacedBy(10.dp)){
             OutlinedTextField(name,{name=it},label={Text("Category name")},singleLine=true)
             Row{FilterChip(selected=!income,onClick={income=false},label={Text("Expense")});Spacer(Modifier.width(8.dp));FilterChip(selected=income,onClick={income=true},label={Text("Income")})}
             Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){palette.forEach{c->Box(Modifier.size(27.dp).clip(CircleShape).background(Color(c)).clickable{color=c},contentAlignment=Alignment.Center){if(c==color)Icon(Icons.Default.Check,null,tint=Color.White)}}}
         }
-    },confirmButton={TextButton(onClick={onSave(name,"category",color,income)}){Text("Create")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
+    },confirmButton={TextButton(onClick={if(name.isNotBlank()) onSave(RuvoCategory(id=existing?.id?:0L,name=name.trim(),icon=existing?.icon?:"category",color=color,isIncome=income))}){Text(if(existing==null)"Create" else "Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
 }
 @Composable private fun BudgetDialog(current:String,onSave:(String)->Unit,onDismiss:()->Unit){
     var value by remember{mutableStateOf(current)}
     AlertDialog(onDismissRequest=onDismiss,title={Text("Monthly budget")},text={OutlinedTextField(value,{value=it},label={Text("Budget in ₹")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number))},confirmButton={TextButton(onClick={onSave(value)}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
 }
-@Composable private fun More(cats:List<RuvoCategory>,dark:Boolean,onDark:(Boolean)->Unit,onAdd:()->Unit,onBudget:()->Unit,budget:String){
+@Composable private fun More(cats:List<RuvoCategory>,dark:Boolean,onDark:(Boolean)->Unit,onAdd:()->Unit,onBudget:()->Unit,budget:String,onEditCategory:(RuvoCategory)->Unit){
     LazyColumn(contentPadding=PaddingValues(bottom=90.dp)){
         item{Heading("More","Make RUVO feel like yours.")}
         item{Column(Modifier.padding(horizontal=18.dp).clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).padding(16.dp)){
@@ -278,7 +278,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             Row(Modifier.fillMaxWidth().clickable{onBudget()}.padding(vertical=7.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("Monthly budget");Text("₹$budget",color=Forest)}
         }}
         item{Row(Modifier.fillMaxWidth().padding(horizontal=22.dp,vertical=15.dp),horizontalArrangement=Arrangement.SpaceBetween){Column{Text("Your categories",fontSize=17.sp,fontWeight=FontWeight.SemiBold);Text("Personalise your spending",fontSize=11.sp,color=Muted)};TextButton(onClick=onAdd){Text("Add")}}}
-        items(cats){c->Row(Modifier.padding(horizontal=22.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(11.dp).clip(CircleShape).background(Color(c.color)));Text(c.name,Modifier.weight(1f).padding(start=10.dp),fontSize=13.sp);Text(if(c.isIncome)"Income" else "Expense",fontSize=10.sp,color=Muted)}}
+        items(cats){c->Row(Modifier.fillMaxWidth().clickable{onEditCategory(c)}.padding(horizontal=22.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(11.dp).clip(CircleShape).background(Color(c.color)));Column(Modifier.weight(1f).padding(start=10.dp)){Text(c.name,fontSize=13.sp);Text(if(c.isIncome)"Income" else "Expense",fontSize=10.sp,color=Muted)};Icon(Icons.Default.Edit,null,tint=Muted,modifier=Modifier.size(16.dp))}}
         item{Text("All information stays on this device. RUVO does not connect to the internet or send your data anywhere.",fontSize=11.sp,color=Muted,modifier=Modifier.padding(22.dp))}
     }
 }
