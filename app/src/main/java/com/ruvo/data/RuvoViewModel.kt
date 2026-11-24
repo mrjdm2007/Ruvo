@@ -48,10 +48,16 @@ class RuvoViewModel(app: Application) : AndroidViewModel(app) {
     }
     fun deleteCategory(item: RuvoCategory) = viewModelScope.launch {
         val fallback = dao.categories().first().firstOrNull { it.id != item.id && it.isIncome == item.isIncome }
-        if (fallback != null) {
-            dao.moveTransactionsToCategory(item.id, fallback.id)
-            dao.deleteCategory(item)
-        }
+        val replacementId = fallback?.id ?: dao.insertCategory(
+            RuvoCategory(
+                name = if (item.isIncome) "Other income" else "Other",
+                icon = "category",
+                color = 0xFF87958B,
+                isIncome = item.isIncome
+            )
+        )
+        dao.moveTransactionsToCategory(item.id, replacementId)
+        dao.deleteCategory(item)
     }
     fun category(id: Long, callback: (RuvoCategory?) -> Unit) = viewModelScope.launch { callback(dao.category(id)) }
 
