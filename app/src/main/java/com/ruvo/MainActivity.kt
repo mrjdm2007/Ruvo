@@ -128,9 +128,10 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     val thisMonth=rows.filter{between(it,now.withDayOfMonth(1),now)}
     val average=spent(thisMonth)/now.dayOfMonth
     val previousStart=now.withDayOfMonth(1).minusMonths(1)
-    val previous=spent(rows.filter{between(it,previousStart,now.withDayOfMonth(1).minusDays(1))})
+    val previousEnd=previousStart.withDayOfMonth(minOf(now.dayOfMonth,previousStart.lengthOfMonth()))
+    val previous=spent(rows.filter{between(it,previousStart,previousEnd)})
     val current=spent(thisMonth)
-    val change=if(previous==0L) 0 else ((current-previous)*100/previous).toInt()
+    val changeLabel=if(previous==0L){if(current==0L)"0%" else "New"}else{val pct=((current.toDouble()-previous.toDouble())/previous.toDouble()*100.0).toInt();(if(pct>0)"+" else "")+pct+"%"}
     LazyColumn(contentPadding=PaddingValues(bottom=90.dp),verticalArrangement=Arrangement.spacedBy(15.dp)) {
         item { Heading("ruvo","A little more clarity with every day.") }
         item {
@@ -142,7 +143,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                 Spacer(Modifier.height(15.dp))
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
                     Column{Text("MONTHLY DAILY AVG.",color=Sage,fontSize=9.sp);Text(cash(average),color=Color.White,fontSize=18.sp,fontWeight=FontWeight.SemiBold)}
-                    Column(horizontalAlignment=Alignment.End){Text("VS LAST MONTH",color=Sage,fontSize=9.sp);Text((if(change>0)"+" else "")+change+"%",color=Color.White,fontSize=18.sp,fontWeight=FontWeight.SemiBold)}
+                    Column(horizontalAlignment=Alignment.End){Text("VS LAST MONTH",color=Sage,fontSize=9.sp);Text(changeLabel,color=Color.White,fontSize=18.sp,fontWeight=FontWeight.SemiBold)}
                 }
             }
         }
