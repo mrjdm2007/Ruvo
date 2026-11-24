@@ -525,7 +525,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     var error by remember{mutableStateOf(false)}
     AlertDialog(onDismissRequest=onDismiss,title={Text("Monthly budget")},text={Column(verticalArrangement=Arrangement.spacedBy(6.dp)){OutlinedTextField(value,{value=it;error=false},label={Text("Budget in ₹")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),isError=error,singleLine=true);if(error)Text("Enter a valid positive amount.",color=Color(0xFFB45E52),fontSize=11.sp)}},confirmButton={TextButton(onClick={if(parsePaise(value)!=null)onSave(value) else error=true}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
 }
-@Composable private fun More(cats:List<RuvoCategory>,dark:Boolean,onDark:(Boolean)->Unit,onAdd:()->Unit,onBudget:()->Unit,budget:String,onEditCategory:(RuvoCategory)->Unit,pinEnabled:Boolean,onSetPin:()->Unit,onDisablePin:()->Unit){
+@Composable private fun More(cats:List<RuvoCategory>,onAdd:()->Unit,onBudget:()->Unit,budget:String,onEditCategory:(RuvoCategory)->Unit,pinEnabled:Boolean,onSetPin:()->Unit,onDisablePin:()->Unit){
     val context=androidx.compose.ui.platform.LocalContext.current
     val prefs=remember(context){context.getSharedPreferences("ruvo_preferences",0)}
     var order by remember { mutableStateOf<List<Long>>(prefs.getString("category_order","")?.split(",")?.mapNotNull{it.toLongOrNull()} ?: emptyList()) }
@@ -533,12 +533,12 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     LazyColumn(contentPadding=PaddingValues(bottom=90.dp)){
         item{Heading("More","Make RUVO feel like yours.")}
         item{Column(Modifier.padding(horizontal=18.dp).glass(RoundedCornerShape(22.dp)).padding(16.dp)){
-            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Column{Text("Dark appearance",fontWeight=FontWeight.Medium);Text("A quieter look after dark",fontSize=11.sp,color=Muted)};Switch(dark,onDark)}
-            HorizontalDivider(Modifier.padding(vertical=10.dp))
-            Row(Modifier.fillMaxWidth().clickable{onSetPin()}.padding(vertical=7.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("App PIN lock");Text(if(pinEnabled)"Change PIN" else "Set PIN",color=Forest)}
-            if(pinEnabled) TextButton(onClick=onDisablePin){Text("Turn off app lock",color=Color(0xFFB45E52))}
-            HorizontalDivider(Modifier.padding(vertical=10.dp))
-            Row(Modifier.fillMaxWidth().clickable{onBudget()}.padding(vertical=7.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("Monthly budget");Text("₹$budget",color=Forest)}
+            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.DarkMode,null,tint=Mint);Column(Modifier.padding(start=11.dp)){Text("Dark mode",fontWeight=FontWeight.Medium);Text("Always on · tuned for low-light clarity",fontSize=11.sp,color=Muted)}}
+            HorizontalDivider(Modifier.padding(vertical=10.dp),color=Color.White.copy(alpha=.08f))
+            Row(Modifier.fillMaxWidth().clickable{onSetPin()}.padding(vertical=7.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("App PIN lock");Text(if(pinEnabled)"Change PIN" else "Set PIN",color=MaterialTheme.colorScheme.primary)}
+            if(pinEnabled) TextButton(onClick=onDisablePin){Text("Turn off app lock",color=Color(0xFFFF9B91))}
+            HorizontalDivider(Modifier.padding(vertical=10.dp),color=Color.White.copy(alpha=.08f))
+            Row(Modifier.fillMaxWidth().clickable{onBudget()}.padding(vertical=7.dp),horizontalArrangement=Arrangement.SpaceBetween){Text("Monthly budget");Text("₹$budget",color=MaterialTheme.colorScheme.primary)}
         }}
         item{Row(Modifier.fillMaxWidth().padding(horizontal=22.dp,vertical=15.dp),horizontalArrangement=Arrangement.SpaceBetween){Column{Text("Your categories",fontSize=17.sp,fontWeight=FontWeight.SemiBold);Text("Personalise your spending",fontSize=11.sp,color=Muted)};TextButton(onClick=onAdd){Text("Add")}}}
         items(orderedCats,key={it.id}){c->
