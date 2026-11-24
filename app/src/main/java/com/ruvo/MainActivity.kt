@@ -9,6 +9,7 @@ import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -51,7 +52,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -245,16 +245,18 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
                     val c=cats.find{it.id==e.key}
                     Column(verticalArrangement=Arrangement.spacedBy(5.dp)){
                         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text(c?.name?:"Other",fontSize=13.sp);Text(cash(e.value),fontSize=13.sp,fontWeight=FontWeight.SemiBold)}
-                        val f=(e.value.toFloat()/maxOf(1L,current)).coerceIn(0f,1f)
-                        Box(Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(Color(0xFFE6EAE3))){Box(Modifier.fillMaxWidth(f).fillMaxHeight().background(Color(c?.color?:0xFF548B69)))}
+                        val target=(e.value.toFloat()/maxOf(1L,current)).coerceIn(0f,1f)
+                        val f by animateFloatAsState(targetValue=target,animationSpec=spring(dampingRatio=0.82f,stiffness=260f),label="category-progress")
+                        Box(Modifier.fillMaxWidth().height(7.dp).clip(CircleShape).background(Color(0xFFE6EAE3))){Box(Modifier.fillMaxWidth(f).fillMaxHeight().background(Brush.horizontalGradient(listOf(Color(c?.color?:0xFF548B69).copy(alpha=.72f),Color(c?.color?:0xFF548B69)))))}
                     }
                 }
             }
         }
         item { Row(Modifier.fillMaxWidth().padding(horizontal=22.dp),horizontalArrangement=Arrangement.SpaceBetween){Section("Monthly budget", "Your spending limit");Text("Edit",color=Forest,fontSize=12.sp,modifier=Modifier.clickable{onBudget()}.padding(5.dp))} }
         item {
-            val p=(current.toFloat()/budget.coerceAtLeast(1)).coerceIn(0f,1f)
-            Column(Modifier.padding(horizontal=18.dp).glass(RoundedCornerShape(22.dp)).padding(16.dp)){
+            val pTarget=(current.toFloat()/budget.coerceAtLeast(1)).coerceIn(0f,1f)
+            val p by animateFloatAsState(targetValue=pTarget,animationSpec=spring(dampingRatio=0.82f,stiffness=240f),label="budget-progress")
+            Column(Modifier.padding(horizontal=18.dp).glass(RoundedCornerShape(22.dp)).padding(16.dp).animateContentSize()){
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
                     Text(if(current>budget) "Over budget" else "Remaining",color=Muted,fontSize=12.sp)
                     Text(if(current>budget) cash(current-budget) else cash(budget-current),fontWeight=FontWeight.SemiBold,color=if(current>budget) Color(0xFFB45E52) else MaterialTheme.colorScheme.onSurface)
@@ -289,14 +291,21 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     }
 }
 @Composable private fun DailySpendChart(values:List<Long>){
-    Canvas(Modifier.fillMaxWidth().height(104.dp)){
+    val max=values.maxOrNull()?.coerceAtLeast(1L)?:1L
+    val animated=values.map { value -> animateFloatAsState(targetValue=if(max>0)(value.toFloat()/max) else 0f,animationSpec=spring(dampingRatio=0.78f,stiffness=230f),label="daily-bar").value }
+    Canvas(Modifier.fillMaxWidth().height(116.dp)){
         if(values.isEmpty()) return@Canvas
-        val max=values.maxOrNull()?.coerceAtLeast(1L)?:1L
         val gap=3.dp.toPx()
         val barWidth=((size.width-gap*(values.size-1))/values.size).coerceAtLeast(1f)
-        values.forEachIndexed{index,value->
-            val height=(value.toFloat()/max*size.height*.88f).coerceAtLeast(if(value>0)3.dp.toPx() else 1.dp.toPx())
-            drawRoundRect(color=if(value==max&&value>0) Forest else Sage.copy(alpha=if(value>0).9f else .22f),topLeft=Offset(index*(barWidth+gap),size.height-height),size=Size(barWidth,height),cornerRadius=CornerRadius(4.dp.toPx(),4.dp.toPx()))
+        val baseline=size.height-3.dp.toPx()
+        for (line in 1..3) {
+            val y=baseline-(baseline*.82f*line/4f)
+            drawLine(color=Muted.copy(alpha=.12f),start=Offset(0f,y),end=Offset(size.width,y),strokeWidth=1.dp.toPx())
+        }
+        animated.forEachIndexed{index,fraction->
+            val height=(fraction*baseline*.82f).coerceAtLeast(if(values[index]>0)3.dp.toPx() else 1.dp.toPx())
+            val color=if(values[index]==max&&values[index]>0)Forest else Sage.copy(alpha=if(values[index]>0).92f else .22f)
+            drawRoundRect(brush=Brush.verticalGradient(listOf(color.copy(alpha=.68f),color)),topLeft=Offset(index*(barWidth+gap),baseline-height),size=Size(barWidth,height),cornerRadius=CornerRadius(5.dp.toPx(),5.dp.toPx()))
         }
     }
 }
