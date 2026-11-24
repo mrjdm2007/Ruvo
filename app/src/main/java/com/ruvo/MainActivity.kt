@@ -271,6 +271,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     var type by remember(existing){mutableStateOf(existing?.type?:"EXPENSE")}
     var category by remember(existing,cats){mutableLongStateOf(existing?.categoryId?:cats.firstOrNull{it.isIncome==(type=="INCOME")}?.id?:0L)}
     var date by remember(existing){mutableStateOf(existing?.timestamp?:System.currentTimeMillis())}
+    var showDatePicker by remember { mutableStateOf(false) }
     val options=cats.filter{it.isIncome==(type=="INCOME")}
     AlertDialog(onDismissRequest=onDismiss,title={Text(if(existing==null)"New entry" else "Edit entry",fontWeight=FontWeight.SemiBold)},text={
         Column(verticalArrangement=Arrangement.spacedBy(10.dp)){
@@ -283,6 +284,10 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             TextButton(onClick={showDatePicker=true}){Icon(Icons.Default.Today,null);Text("Date · "+Instant.ofEpochMilli(date).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("d MMM yyyy")))}
         }
     },confirmButton={TextButton(onClick={val paise=parsePaise(amount);if(paise!=null&&category!=0L)onSave(RuvoTransaction(id=existing?.id?:0,amountPaise=paise,categoryId=category,note=note.trim(),timestamp=date,type=type))}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
+    if(showDatePicker){
+        val picker=rememberDatePickerState(initialSelectedDateMillis=date)
+        DatePickerDialog(onDismissRequest={showDatePicker=false},confirmButton={TextButton(onClick={picker.selectedDateMillis?.let{date=LocalDate.ofEpochDay(it/86400000L).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()};showDatePicker=false}){Text("Select")}},dismissButton={TextButton(onClick={showDatePicker=false}){Text("Cancel")}}){DatePicker(state=picker)}
+    }
 }
 
 @Composable private fun CategoryDialog(existing:RuvoCategory?,onDismiss:()->Unit,onSave:(RuvoCategory)->Unit,onDelete:(RuvoCategory)->Unit){
@@ -315,7 +320,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
 @Composable private fun More(cats:List<RuvoCategory>,dark:Boolean,onDark:(Boolean)->Unit,onAdd:()->Unit,onBudget:()->Unit,budget:String,onEditCategory:(RuvoCategory)->Unit,pinEnabled:Boolean,onSetPin:()->Unit,onDisablePin:()->Unit){
     val context=androidx.compose.ui.platform.LocalContext.current
     val prefs=remember(context){context.getSharedPreferences("ruvo_preferences",0)}
-    var order by remember { mutableStateOf(prefs.getString("category_order","")?.split(",")?.mapNotNull{it.toLongOrNull()} ?: emptyList()) }
+    var order by remember { mutableStateOf<List<Long>>(prefs.getString("category_order","")?.split(",")?.mapNotNull{it.toLongOrNull()} ?: emptyList()) }
     val orderedCats=cats.sortedBy { val index=order.indexOf(it.id); if(index<0) Int.MAX_VALUE else index }
     LazyColumn(contentPadding=PaddingValues(bottom=90.dp)){
         item{Heading("More","Make RUVO feel like yours.")}
