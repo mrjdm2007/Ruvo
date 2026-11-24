@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ruvo.data.*
-import java.text.NumberFormat
+import java.text.NumberFormat\nimport java.math.BigDecimal\nimport java.math.RoundingMode
 import java.time.*
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
     companion object { const val ACTION_QUICK_ADD = "com.ruvo.QUICK_ADD" }
 }
 
-private fun cash(paise: Long): String = NumberFormat.getCurrencyInstance(Locale("en","IN")).apply { maximumFractionDigits=0; minimumFractionDigits=0 }.format(paise/100.0)
+private fun cash(paise: Long): String = NumberFormat.getCurrencyInstance(Locale("en","IN")).apply { maximumFractionDigits=2; minimumFractionDigits=if(paise % 100L == 0L) 0 else 2 }.format(paise/100.0)\nprivate fun parsePaise(input:String):Long? = runCatching { val amount=BigDecimal(input.trim()); if(amount<=BigDecimal.ZERO || amount.scale()>2) null else amount.movePointRight(2).setScale(0,RoundingMode.HALF_UP).longValueExact() }.getOrNull()
 private fun midnight(d: LocalDate) = d.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 private fun between(t:RuvoTransaction,a:LocalDate,b:LocalDate)=t.timestamp>=midnight(a) && t.timestamp<midnight(b.plusDays(1))
 private fun spent(rows:List<RuvoTransaction>)=rows.filter{it.type=="EXPENSE"}.sumOf{it.amountPaise}
@@ -273,7 +273,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             OutlinedTextField(note,{note=it},label={Text("Note (optional)")},singleLine=true,modifier=Modifier.fillMaxWidth())
             TextButton(onClick={date=System.currentTimeMillis()}){Icon(Icons.Default.Today,null);Text("Date · "+Instant.ofEpochMilli(date).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("d MMM yyyy")))}
         }
-    },confirmButton={TextButton(onClick={val v=amount.toDoubleOrNull()?:0.0;if(v>0&&category!=0L)onSave(RuvoTransaction(id=existing?.id?:0,amountPaise=(v*100).toLong(),categoryId=category,note=note.trim(),timestamp=date,type=type))}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
+    },confirmButton={TextButton(onClick={val paise=parsePaise(amount);if(paise!=null&&category!=0L)onSave(RuvoTransaction(id=existing?.id?:0,amountPaise=paise,categoryId=category,note=note.trim(),timestamp=date,type=type))}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
 }
 
 @Composable private fun CategoryDialog(existing:RuvoCategory?,onDismiss:()->Unit,onSave:(RuvoCategory)->Unit,onDelete:(RuvoCategory)->Unit){
