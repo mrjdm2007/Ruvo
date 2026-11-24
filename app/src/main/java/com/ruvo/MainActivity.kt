@@ -112,14 +112,16 @@ private fun pinDigest(pin:String)=MessageDigest.getInstance("SHA-256").digest(pi
 
 class MainActivity : ComponentActivity() {
     private val vm: RuvoViewModel by viewModels()
+    private var quickAddTrigger by mutableIntStateOf(0)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { RuvoApp(vm, intent?.action == ACTION_QUICK_ADD) }
+        if (intent?.action == ACTION_QUICK_ADD) quickAddTrigger = 1
+        setContent { RuvoApp(vm, quickAddTrigger > 0) { quickAddTrigger = 0 } }
     }
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        if (intent.action == ACTION_QUICK_ADD) setContent { RuvoApp(vm, true) }
+        if (intent.action == ACTION_QUICK_ADD) quickAddTrigger++
     }
     companion object { const val ACTION_QUICK_ADD = "com.ruvo.QUICK_ADD" }
 }
@@ -131,11 +133,12 @@ private fun between(t:RuvoTransaction,a:LocalDate,b:LocalDate)=t.timestamp>=midn
 private fun spent(rows:List<RuvoTransaction>)=rows.filter{it.type=="EXPENSE"}.sumOf{it.amountPaise}
 
 @Composable
-fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
+fun RuvoApp(vm:RuvoViewModel, quick:Boolean, onQuickAddHandled:()->Unit = {}) {
     val rows by vm.transactions.collectAsStateWithLifecycle()
     val cats by vm.categories.collectAsStateWithLifecycle()
     var page by remember { mutableIntStateOf(0) }
-    var dialog by remember { mutableStateOf(quick) }
+    var dialog by remember { mutableStateOf(false) }
+    LaunchedEffect(quick) { if (quick) { editing = null; dialog = true; onQuickAddHandled() } }
     var editing by remember { mutableStateOf<RuvoTransaction?>(null) }
     var categoryDialog by remember { mutableStateOf(false) }
     var editingCategory by remember { mutableStateOf<RuvoCategory?>(null) }
