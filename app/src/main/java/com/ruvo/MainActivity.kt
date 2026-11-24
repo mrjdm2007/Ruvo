@@ -77,6 +77,7 @@ private fun Modifier.glass(shape: RoundedCornerShape = RoundedCornerShape(22.dp)
         .clip(shape)
         .background(Brush.verticalGradient(listOf(surface.copy(alpha = 0.91f), surface.copy(alpha = 0.74f))))
         .border(1.dp, Color.White.copy(alpha = if (MaterialTheme.colorScheme.background == Ivory) 0.72f else 0.10f), shape)
+        .animateContentSize(animationSpec = spring(dampingRatio = 0.88f, stiffness = 420f))
 }
 
 private fun categoryGlyph(name: String?): ImageVector = when(name) {
