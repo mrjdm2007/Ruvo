@@ -10,7 +10,7 @@ RUVO is a minimal, offline-first Android expense tracker. It has no account, net
 - Monthly daily average (including zero-spend days)
 - Category breakdown, monthly comparison, budgets and spending insights
 - Search and filter transaction history
-- Undo-friendly deletion flow
+- Confirm-before-delete flow
 - Optional local app lock
 - Compact home-screen widget showing today's spend and a quick-add action
 - Forest-green, sage and warm-ivory visual system; dark theme support
