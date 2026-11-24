@@ -2,6 +2,7 @@
     <application
         android:allowBackup="false"
         android:label="RUVO"
+        android:icon="@drawable/ic_ruvo_wallet"
         android:theme="@style/Theme.Ruvo"
         android:supportsRtl="true">
         <activity android:name=".MainActivity" android:exported="true">
