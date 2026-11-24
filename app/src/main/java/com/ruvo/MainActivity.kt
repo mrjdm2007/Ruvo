@@ -138,8 +138,8 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean, onQuickAddHandled:()->Unit = {}) {
     val cats by vm.categories.collectAsStateWithLifecycle()
     var page by remember { mutableIntStateOf(0) }
     var dialog by remember { mutableStateOf(false) }
-    LaunchedEffect(quick) { if (quick) { editing = null; dialog = true; onQuickAddHandled() } }
     var editing by remember { mutableStateOf<RuvoTransaction?>(null) }
+    LaunchedEffect(quick) { if (quick) { editing = null; dialog = true; onQuickAddHandled() } }
     var categoryDialog by remember { mutableStateOf(false) }
     var editingCategory by remember { mutableStateOf<RuvoCategory?>(null) }
     var budgetDialog by remember { mutableStateOf(false) }
