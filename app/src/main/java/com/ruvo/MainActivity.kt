@@ -83,7 +83,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
             Box(Modifier.fillMaxSize().padding(padding)) {
                 when(page) {
                     0 -> Home(rows,cats,budget.toLongOrNull()?.times(100)?:1500000L,onBudget={budgetDialog=true},onEdit={editing=it;dialog=true})
-                    1 -> CalendarPage(rows,onEdit={editing=it;dialog=true})
+                    1 -> CalendarPage(rows,cats,onEdit={editing=it;dialog=true})
                     2 -> History(rows,cats,search,{search=it},onEdit={editing=it;dialog=true},onDelete={vm.delete(it)})
                     else -> More(cats,dark,{dark=it;prefs.edit().putBoolean("dark_mode",it).apply()},{categoryDialog=true},{budgetDialog=true},budget)
                 }
@@ -171,7 +171,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     }
 }
 
-@Composable private fun CalendarPage(rows:List<RuvoTransaction>,onEdit:(RuvoTransaction)->Unit){
+@Composable private fun CalendarPage(rows:List<RuvoTransaction>,cats:List<RuvoCategory>,onEdit:(RuvoTransaction)->Unit){
     var month by remember{mutableStateOf(YearMonth.now())}
     var selected by remember{mutableStateOf(LocalDate.now())}
     var monthDrag by remember{mutableFloatStateOf(0f)}
@@ -207,7 +207,7 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
         Column(Modifier.padding(18.dp).clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface).padding(15.dp)){
             Text(selected.format(DateTimeFormatter.ofPattern("EEEE, d MMMM")),fontSize=12.sp,color=Muted)
             Text(cash(spent(chosen)),fontSize=26.sp,fontWeight=FontWeight.SemiBold,color=Forest)
-            if(chosen.isEmpty()) Empty("Nothing recorded on this day.") else chosen.forEach{TransactionLine(it,emptyList()){onEdit(it)}}
+            if(chosen.isEmpty()) Empty("Nothing recorded on this day.") else chosen.forEach{TransactionLine(it,cats){onEdit(it)}}
         }
     }
 }
