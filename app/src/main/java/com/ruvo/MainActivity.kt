@@ -212,23 +212,36 @@ fun RuvoApp(vm:RuvoViewModel, quick:Boolean) {
     }
 }
 
-@Composable private fun History(rows:List<RuvoTransaction>,cats:List<RuvoCategory>,query:String,onQuery:(String)->Unit,onEdit:(RuvoTransaction)->Unit,onDelete:(RuvoTransaction)->Unit){
+@Composable private fun History(rows:List<RuvoTransaction>,cats:List<RuvoCategory>,query:String,onQuery:(String)->Unit,onEdit:(RuvoTransaction)->Unit,onDelete:(RuvoTransaction)->Unit,onRestore:(RuvoTransaction)->Unit){
+    val snackbar = remember { SnackbarHostState() }
+    var deleted by remember { mutableStateOf<RuvoTransaction?>(null) }
     var filter by remember{mutableStateOf("All")}
     var pending by remember{mutableStateOf<RuvoTransaction?>(null)}
     val shown=rows.filter{(filter=="All"||it.type==filter)&&(query.isBlank()||it.note.contains(query,true)||cats.find{c->c.id==it.categoryId}?.name?.contains(query,true)==true||cash(it.amountPaise).contains(query,true))}
-    Column(Modifier.fillMaxSize()){
-        Heading("Activity","Every entry, all in one place.")
-        OutlinedTextField(query,onQuery,Modifier.fillMaxWidth().padding(horizontal=18.dp),placeholder={Text("Search transactions")},leadingIcon={Icon(Icons.Default.Search,null)},singleLine=true,shape=RoundedCornerShape(15.dp))
-        Row(Modifier.padding(18.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){listOf("All","EXPENSE","INCOME").forEach{FilterChip(selected=filter==it,onClick={filter=it},label={Text(when(it){"EXPENSE"->"Expenses";"INCOME"->"Income";else->it})})}}
-        LazyColumn(contentPadding=PaddingValues(horizontal=18.dp,vertical=4.dp)){
-            items(shown,key={it.id}){t->
-                var dx by remember{mutableFloatStateOf(0f)}
-                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surface).pointerInput(t.id){detectHorizontalDragGestures(onHorizontalDrag={_,d->dx=(dx+d).coerceIn(-100f,100f)},onDragEnd={if(dx < -55)pending=t else if(dx>55)onEdit(t);dx=0f})}.clickable{onEdit(t)}.padding(13.dp),verticalAlignment=Alignment.CenterVertically){
-                    Column(Modifier.weight(1f)){Text(cats.find{it.id==t.categoryId}?.name?:"Entry",fontSize=13.sp,fontWeight=FontWeight.Medium);Text(t.note.ifBlank{"Tap to edit"},fontSize=10.sp,color=Muted)}
-                    Text((if(t.type=="INCOME")"+" else "−")+cash(t.amountPaise),fontSize=13.sp,fontWeight=FontWeight.SemiBold)
+    LaunchedEffect(deleted) {
+        val item = deleted
+        if (item != null) {
+            val result = snackbar.showSnackbar("Entry deleted", actionLabel="Undo", withDismissAction=true)
+            if (result == SnackbarResult.ActionPerformed) onRestore(item)
+            deleted = null
+        }
+    }
+    Box(Modifier.fillMaxSize()){
+        Column(Modifier.fillMaxSize()){
+            Heading("Activity","Every entry, all in one place.")
+            OutlinedTextField(query,onQuery,Modifier.fillMaxWidth().padding(horizontal=18.dp),placeholder={Text("Search transactions")},leadingIcon={Icon(Icons.Default.Search,null)},singleLine=true,shape=RoundedCornerShape(15.dp))
+            Row(Modifier.padding(18.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){listOf("All","EXPENSE","INCOME").forEach{FilterChip(selected=filter==it,onClick={filter=it},label={Text(when(it){"EXPENSE"->"Expenses";"INCOME"->"Income";else->it})})}}
+            LazyColumn(contentPadding=PaddingValues(horizontal=18.dp,vertical=4.dp)){
+                items(shown,key={it.id}){t->
+                    var dx by remember{mutableFloatStateOf(0f)}
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surface).pointerInput(t.id){detectHorizontalDragGestures(onHorizontalDrag={_,d->dx=(dx+d).coerceIn(-100f,100f)},onDragEnd={if(dx < -55)pending=t else if(dx>55)onEdit(t);dx=0f})}.clickable{onEdit(t)}.padding(13.dp),verticalAlignment=Alignment.CenterVertically){
+                        Column(Modifier.weight(1f)){Text(cats.find{it.id==t.categoryId}?.name?:"Entry",fontSize=13.sp,fontWeight=FontWeight.Medium);Text(t.note.ifBlank{"Tap to edit"},fontSize=10.sp,color=Muted)}
+                        Text((if(t.type=="INCOME")"+" else "−")+cash(t.amountPaise),fontSize=13.sp,fontWeight=FontWeight.SemiBold)
+                    }
                 }
             }
         }
+        SnackbarHost(snackbar,Modifier.align(Alignment.BottomCenter))
     }
     pending?.let{t->AlertDialog(onDismissRequest={pending=null},title={Text("Delete entry?")},text={Text("This transaction will be removed.")},confirmButton={TextButton(onClick={onDelete(t);deleted=t;pending=null}){Text("Delete")}},dismissButton={TextButton(onClick={pending=null}){Text("Cancel")}})}
 }
