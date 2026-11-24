@@ -37,7 +37,7 @@ class RuvoViewModel(app: Application) : AndroidViewModel(app) {
         if (item.id == 0L) dao.insertTransaction(item) else dao.updateTransaction(item)
         refreshWidget()
     }
-    fun delete(item: RuvoTransaction) = viewModelScope.launch { dao.deleteTransaction(item); refreshWidget() }
+    fun delete(item: RuvoTransaction) = viewModelScope.launch { dao.deleteTransaction(item); refreshWidget() }\n    fun restore(item: RuvoTransaction) = viewModelScope.launch { dao.insertTransaction(item); refreshWidget() }
     fun addCategory(name: String, icon: String, color: Long, income: Boolean = false) = viewModelScope.launch {
         if (name.isNotBlank()) dao.insertCategory(RuvoCategory(name=name.trim(), icon=icon, color=color, isIncome=income))
     }
